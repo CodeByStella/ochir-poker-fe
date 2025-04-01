@@ -1,0 +1,50 @@
+{
+  "name": "my-project1",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@headlessui/react": "^2.1.10",
+    "@heroicons/react": "^2.1.5",
+    "@mantine/core": "^7.13.2",
+    "@mantine/dates": "^7.13.2",
+    "@mantine/form": "^7.13.2",
+    "@mantine/hooks": "^7.13.2",
+    "@reduxjs/toolkit": "^2.6.1",
+    "@types/mongoose": "^5.11.97",
+    "antd": "^5.22.1",
+    "dayjs": "^1.11.13",
+    "framer-motion": "^12.6.2",
+    "mongoose": "^8.12.1",
+    "next": "14.2.15",
+    "qs": "^6.13.0",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-hook-form": "^7.53.1",
+    "react-hot-toast": "^2.4.1",
+    "react-redux": "^9.2.0",
+    "redux-persist": "^6.0.0",
+    "socket.io-client": "^4.8.1",
+    "swr": "^2.2.5",
+    "yup": "^1.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/qs": "^6.9.16",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.15",
+    "postcss": "^8.4.47",
+    "postcss-preset-mantine": "^1.17.0",
+    "postcss-simple-vars": "^7.0.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5"
+  }
+}

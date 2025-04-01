@@ -1,0 +1,9 @@
+.ant-modal-content {
+    background-color: #1a1b1e !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+  }
+  
+  .ant-modal-body {
+    padding: 0 !important;
+  }

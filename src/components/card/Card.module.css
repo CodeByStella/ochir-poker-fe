@@ -1,0 +1,119 @@
+.card {
+  position: absolute;
+  width: 60px;
+  height: 84px;
+}
+
+.deal {
+  position: absolute;
+  animation: dealCard 1s ease-out forwards; 
+}
+
+@keyframes dealCard {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(var(--deal-x)), calc(var(--deal-y))) scale(0.8);
+    opacity: 0.9;
+  }
+}
+
+.shuffleStep {
+  animation: shuffleAnimation 0.3s ease-in-out infinite; 
+}
+
+@keyframes shuffleAnimation {
+  0% {
+    transform: translateX(0) rotate(0deg) scale(1);
+    z-index: 5;
+  }
+  25% {
+    transform: translateX(-15px) rotate(-2deg) scale(1.05);
+    z-index: 10;
+  }
+  50% {
+    transform: translateX(15px) rotate(2deg) scale(1.05);
+    z-index: 15;
+  }
+  75% {
+    transform: translateX(-10px) rotate(-1deg) scale(1);
+    z-index: 10;
+  }
+  100% {
+    transform: translateX(0) rotate(0deg) scale(1);
+    z-index: 5;
+  }
+}
+
+.animationContainer {
+  position: absolute;
+  z-index: 50;
+  perspective: 1000px;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(234, 179, 8, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+}
+
+.animate-pulse {
+  animation: pulse 1.5s infinite;
+}
+
+.cardInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s ease; 
+}
+
+.card.open .cardInner {
+  transform: rotateY(180deg);
+}
+
+.cardFront,
+.cardBack {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+}
+
+.cardFront {
+  transform: rotateY(180deg);
+}
+
+.cardBack {
+  transform: rotateY(0deg);
+}
+.winner-highlight {
+  animation: winnerGlow 1s infinite alternate;
+}
+
+@keyframes winnerGlow {
+  0% {
+    box-shadow: 0 0 5px #ffd700, 0 0 10px #ffd700, 0 0 15px #ffd700;
+  }
+  100% {
+    box-shadow: 0 0 10px #ffd700, 0 0 20px #ffd700, 0 0 30px #ffd700;
+  }
+}
+
+
+@media (max-width: 768px) {
+  .chat-container {
+    width: 80%;
+    max-width: 300px;
+  }
+  .chat-container button img {
+    width: 40px;
+    height: 33px;
+  }
+  .chat-container .overflow-y-auto {
+    max-height: 30vh;
+  }
+}

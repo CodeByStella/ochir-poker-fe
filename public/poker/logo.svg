@@ -1,0 +1,13 @@
+<svg width="500" height="500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Diamond shape -->
+  <path d="M250,100 L400,250 L250,400 L100,250 Z" stroke="#CCCCCC" stroke-width="3" fill="none" />
+  <!-- Diagonal lines extending outward -->
+  <line x1="100" y1="250" x2="50" y2="200" stroke="#CCCCCC" stroke-width="2" />
+  <line x1="100" y1="250" x2="50" y2="300" stroke="#CCCCCC" stroke-width="2" />
+  <line x1="400" y1="250" x2="450" y2="200" stroke="#CCCCCC" stroke-width="2" />
+  <line x1="400" y1="250" x2="450" y2="300" stroke="#CCCCCC" stroke-width="2" />
+  <!-- Star symbol -->
+  <path d="M250,50 L270,90 L310,90 L280,110 L290,150 L250,130 L210,150 L220,110 L190,90 L230,90 Z" stroke="#CCCCCC" stroke-width="2" fill="none" />
+  <!-- Text -->
+  <text x="250" y="300" font-family="Arial, sans-serif" font-size="60" font-weight="bold" fill="#CCCCCC" text-anchor="middle">TUSHIG</text>
+</svg>
