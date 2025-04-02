@@ -93,7 +93,7 @@ const LoginModal = ({ modal, setModal, onSuccessfulLogin }: Props) => {
     >
       <div className="flex flex-col md:flex-row h-auto md:h-[400px]">
         <div
-          className="hidden md:block w-full md:w-1/2 p-6 flex flex-col justify-between relative bg-cover bg-center bg-no-repeat bg-[url('/qwe.jpg')] bg-[#1a1b1e]"
+          className="hidden md:block w-full md:w-1/2 p-6  flex-col justify-between relative bg-cover bg-center bg-no-repeat bg-[url('/qwe.jpg')] bg-[#1a1b1e]"
           style={{ borderRadius: '8px 0 0 8px' }}
         >
         </div>

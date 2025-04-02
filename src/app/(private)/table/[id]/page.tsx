@@ -5,8 +5,6 @@ import io, { Socket } from "socket.io-client";
 import useSWR from "swr";
 import { authApi } from "@/apis";
 import { message as toastMessage } from "@/utils/toast";
-import Image from "next/image";
-import tableChatIcon from "../../../../../public/poker/chattable.svg";
 import background from "../../../../../public/asset/back.jpg";
 import cardBack from "../../../../../public/card.png";
 import { PokerTableSVG } from "./PokerTableSVG";
@@ -15,7 +13,9 @@ import cardStyles from "../../../../components/card/Card.module.css";
 import LoginModal from "@/components/modal/Login";
 import { siteApi } from "@/config/site";
 import { Header } from "@/components/header";
-
+import ChatComponent from "@/components/PokerTable/ChatSection";
+import Waitinglist from "@/components/PokerTable/WaitingList";
+import SeatInstruction from "@/components/PokerTable/SeatInstruction";
 const socket: Socket = io(`${siteApi}`, {
   withCredentials: true,
   reconnection: true,
@@ -24,13 +24,6 @@ const socket: Socket = io(`${siteApi}`, {
 const SHUFFLE_DURATION = 1500;
 const WINNER_DISPLAY_DURATION = 5000;
 const CHIP_ANIMATION_DURATION = 1000;
-
-interface IUser {
-  _id: string;
-  name: string;
-  amount: number;
-  role: "user" | "admin"; 
-}
 
 export interface IPlayer {
   _id: string;
@@ -44,7 +37,7 @@ export interface IPlayer {
   hasActed: boolean;
 }
 
-interface ITable {
+export interface ITable {
   _id: string;
   name: string;
   status: string;
@@ -60,19 +53,18 @@ interface ITable {
   smallBlind: number;
   bigBlind: number;
   buyIn: number;
-  messages?: { user: { _id: string; name?: string }; content: string; timestamp: Date }[];
   deck: any[];
-}
-
-interface IMessage {
-  user: { _id: string; name?: string };
-  content: string;
-  timestamp: Date;
 }
 
 interface DealCardsData {
   tableId: string;
-  players: { user: string; seat: number; cards: [string, string]; chips: number; username: string }[];
+  players: {
+    user: string;
+    seat: number;
+    cards: [string, string];
+    chips: number;
+    username: string;
+  }[];
 }
 
 interface PlayerAction {
@@ -94,29 +86,26 @@ export default function PokerTable() {
   const [screenWidth, setScreenWidth] = useState(0);
   const [screenHeight, setScreenHeight] = useState(0);
   const [table, setTable] = useState<ITable | null>(null);
-  const [messages, setMessages] = useState<IMessage[]>([]);
-  const [newMessage, setNewMessage] = useState<string>("");
-  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [raiseAmount, setRaiseAmount] = useState<number>(0);
   const [isDealing, setIsDealing] = useState<boolean>(false);
-  const [pendingDealCards, setPendingDealCards] = useState<DealCardsData | null>(null);
+  const [pendingDealCards, setPendingDealCards] =
+    useState<DealCardsData | null>(null);
   const [winners, setWinners] = useState<WinnerData[]>([]);
   const [showCommunityCards, setShowCommunityCards] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
   const [chipAmount, setChipAmount] = useState<number>(0);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const animationContainerRef = useRef<HTMLDivElement>(null);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-  const [chatPosition, setChatPosition] = useState({ x: 50, y: 50 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [lastActions, setLastActions] = useState<Map<string, PlayerAction>>(new Map());
+  const [lastActions, setLastActions] = useState<Map<string, PlayerAction>>(
+    new Map(),
+  );
   const turnTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [adminPreviewCards, setAdminPreviewCards] = useState<string[]>([])
-  const [showdownPlayers, setShowdownPlayers] = useState<{ playerId: string; cards: string[] }[]>([]);
-  
-  const dragOffset = useRef({ x: 0, y: 0 });
+  const [adminPreviewCards, setAdminPreviewCards] = useState<string[]>([]);
+  const [showdownPlayers, setShowdownPlayers] = useState<
+    { playerId: string; cards: string[] }[]
+  >([]);
+
   const { data: currentUser, mutate } = useSWR("swr.user.me", async () => {
     const res = await authApi.me();
     return res;
@@ -156,7 +145,7 @@ export default function PokerTable() {
       }
     }
     if (stack.length === 0 && amount > 0) stack.push(chipImages[1]);
-    return stack.slice(0, 3); 
+    return stack.slice(0, 3);
   };
 
   useEffect(() => {
@@ -173,7 +162,10 @@ export default function PokerTable() {
     socket.emit("getTableData", tableId);
     socket.on("tableData", (data: ITable) => {
       setTable(data);
-      if (data.status === "playing" && (data.round !== "preflop" || data.communityCards.length > 0)) {
+      if (
+        data.status === "playing" &&
+        (data.round !== "preflop" || data.communityCards.length > 0)
+      ) {
         setShowCommunityCards(true);
       }
     });
@@ -183,15 +175,19 @@ export default function PokerTable() {
   }, [tableId]);
 
   const updateAdminPreviewCards = (tableData: ITable) => {
-    if (isAdmin && tableData.status === "playing" && tableData.deck.length >= 6) {
+    if (
+      isAdmin &&
+      tableData.status === "playing" &&
+      tableData.deck.length >= 6
+    ) {
       const deck = tableData.deck;
       const lastSix = deck.slice(-6);
       const previewCards = [
-        lastSix[0], 
+        lastSix[0],
         lastSix[1],
         lastSix[3],
         lastSix[4],
-        lastSix[5], 
+        lastSix[5],
       ];
       setAdminPreviewCards(previewCards);
     } else {
@@ -206,26 +202,22 @@ export default function PokerTable() {
 
     const handleTableUpdate = (data: ITable) => {
       setTable(data);
-      updateAdminPreviewCards(data)
-      if (data.messages) {
-        setMessages(
-          data.messages.map((msg) => ({
-            user: { _id: msg.user._id, name: msg.user.name || "Unknown" },
-            content: msg.content,
-            timestamp: new Date(msg.timestamp),
-          }))
-        );
-      }
+      updateAdminPreviewCards(data);
       setRaiseAmount(data.currentBet + 10);
       setWinners([]);
-      if (data.status === "playing" && (data.round !== "preflop" || data.communityCards.length > 0)) {
+      if (
+        data.status === "playing" &&
+        (data.round !== "preflop" || data.communityCards.length > 0)
+      ) {
         setShowCommunityCards(true);
       }
     };
 
     const handleHandResult = (data: { winners: WinnerData[] }) => {
       setWinners(data.winners);
-      potSound.play().catch((err) => console.error("Error playing pot sound:", err));
+      potSound
+        .play()
+        .catch((err) => console.error("Error playing pot sound:", err));
       setTimeout(() => setWinners([]), WINNER_DISPLAY_DURATION);
     };
 
@@ -238,18 +230,24 @@ export default function PokerTable() {
     socket.on("reconnect", () => {
       socket.emit("joinTable", { userId: currentUser?._id, tableId });
       socket.emit("getTableData", tableId);
+      socket.emit("getLobbyMessages");
     });
 
-    socket.on("playerTurn", ({ playerId, tableId: eventTableId, turnStartTime }) => {
-      if (eventTableId !== tableId) return;
-      console.log("Received playerTurn event:", { playerId, turnStartTime });
-    });
+    socket.on(
+      "playerTurn",
+      ({ playerId, tableId: eventTableId, turnStartTime }) => {
+        if (eventTableId !== tableId) return;
+        console.log("Received playerTurn event:", { playerId, turnStartTime });
+      },
+    );
 
     socket.on("tableUpdate", handleTableUpdate);
     socket.on("gameStarted", (data: ITable) => {
-      shuffleSound.play().catch((err) => console.error("Error playing shuffle sound:", err));
+      shuffleSound
+        .play()
+        .catch((err) => console.error("Error playing shuffle sound:", err));
       setTable(data);
-      updateAdminPreviewCards(data); 
+      updateAdminPreviewCards(data);
       setShowCommunityCards(false);
     });
 
@@ -262,7 +260,6 @@ export default function PokerTable() {
         });
         return newActions;
       });
-      // Optionally clear the action after a timeout (e.g., 5 seconds)
       setTimeout(() => {
         setLastActions((prev) => {
           const newActions = new Map(prev);
@@ -278,47 +275,53 @@ export default function PokerTable() {
 
       setIsDealing(true);
       setTimeout(() => {
-        animateDealCards(
-          data.players, 
-          table?.maxPlayers || 10
-        );
+        animateDealCards(data.players, table?.maxPlayers || 10);
       }, SHUFFLE_DURATION);
 
-      setTimeout(() => {
-        setTable((prev) => {
-          if (!prev) return prev;
-          const updatedPlayers = prev.players.map((p) => {
-            const dealtPlayer = data.players.find((dp) => dp.user === p.user);
-            return dealtPlayer ? { ...p, cards: dealtPlayer.cards } : p;
+      setTimeout(
+        () => {
+          setTable((prev) => {
+            if (!prev) return prev;
+            const updatedPlayers = prev.players.map((p) => {
+              const dealtPlayer = data.players.find((dp) => dp.user === p.user);
+              return dealtPlayer ? { ...p, cards: dealtPlayer.cards } : p;
+            });
+            return { ...prev, players: updatedPlayers };
           });
-          return { ...prev, players: updatedPlayers };
-        });
-        setIsDealing(false);
-        setShowCommunityCards(true); 
-      }, SHUFFLE_DURATION + (data.players.length * 2 * 200) + 500);
+          setIsDealing(false);
+          setShowCommunityCards(true);
+        },
+        SHUFFLE_DURATION + data.players.length * 2 * 200 + 500,
+      );
     });
 
-    socket.on("handResult", (data: { winners: WinnerData[]; showdownPlayers: { playerId: string; cards: string[] }[] }) => {
-      setWinners(data.winners);
-      setShowdownPlayers(data.showdownPlayers);
-      potSound.play().catch((err) => console.error("Error playing pot sound:", err));
-      setTimeout(() => {
-        setWinners([]);
-        setShowdownPlayers([]); 
-      }, WINNER_DISPLAY_DURATION);
-    });
+    socket.on(
+      "handResult",
+      (data: {
+        winners: WinnerData[];
+        showdownPlayers: { playerId: string; cards: string[] }[];
+      }) => {
+        setWinners(data.winners);
+        setShowdownPlayers(data.showdownPlayers);
+        potSound
+          .play()
+          .catch((err) => console.error("Error playing pot sound:", err));
+        setTimeout(() => {
+          setWinners([]);
+          setShowdownPlayers([]);
+        }, WINNER_DISPLAY_DURATION);
+      },
+    );
+
     socket.on("roundUpdate", (data: ITable) => {
       if (data._id !== tableId) return;
       if (data.round !== "preflop" && data.communityCards.length > 0) {
-        flipSound.play().catch((err) => console.error("Error playing flip sound:", err));
+        flipSound
+          .play()
+          .catch((err) => console.error("Error playing flip sound:", err));
         setShowCommunityCards(true);
       }
       setTable(data);
-    });
-
-    socket.on("newMessage", (message) => {
-      setMessages((prev) => [...prev, message]);
-      scrollToBottom();
     });
 
     socket.on("chipsAdded", ({ tableId: updatedTableId, userId, amount }) => {
@@ -326,11 +329,15 @@ export default function PokerTable() {
       setTable((prev) => {
         if (!prev) return prev;
         const updatedPlayers = prev.players.map((player) =>
-          player.user === userId ? { ...player, chips: player.chips + amount } : player
+          player.user === userId
+            ? { ...player, chips: player.chips + amount }
+            : player,
         );
         return { ...prev, players: updatedPlayers };
       });
-      chipSound.play().catch((err) => console.error("Error playing chip sound:", err));
+      chipSound
+        .play()
+        .catch((err) => console.error("Error playing chip sound:", err));
       toastMessage.success(`Added ${amount} chips to your stack`);
     });
 
@@ -344,7 +351,6 @@ export default function PokerTable() {
       socket.off("dealCards");
       socket.off("handResult", handleHandResult);
       socket.off("roundUpdate");
-      socket.off("newMessage");
       socket.off("chipsAdded");
       socket.off("error");
       socket.off("playerAction");
@@ -360,89 +366,17 @@ export default function PokerTable() {
     if (table && pendingDealCards && pendingDealCards.tableId === tableId) {
       setTimeout(() => {
         animateDealCards(
-          pendingDealCards.players.map((player) => ({ ...player, chips: 0, username: "Unknown" })),
-          table.maxPlayers
+          pendingDealCards.players.map((player) => ({
+            ...player,
+            chips: 0,
+            username: "Unknown",
+          })),
+          table.maxPlayers,
         );
         setPendingDealCards(null);
       }, SHUFFLE_DURATION);
     }
   }, [table, pendingDealCards]);
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (chatContainerRef.current) {
-      setIsDragging(true);
-      const rect = chatContainerRef.current.getBoundingClientRect();
-      dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    }
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging && chatContainerRef.current) {
-      e.preventDefault();
-      const newX = e.clientX - dragOffset.current.x;
-      const newY = e.clientY - dragOffset.current.y;
-      const maxX = window.innerWidth - chatContainerRef.current.offsetWidth;
-      const maxY = window.innerHeight - chatContainerRef.current.offsetHeight;
-      setChatPosition({
-        x: Math.max(0, Math.min(newX, maxX)),
-        y: Math.max(0, Math.min(newY, maxY)),
-      });
-    }
-  };
-
-  const handleMouseUp = () => setIsDragging(false);
-
-  const getVisibleCardCount = (round: string, totalCards: number): number => {
-    switch (round) {
-      case "preflop": return 0;
-      case "flop": return Math.min(3, totalCards);
-      case "turn": return Math.min(4, totalCards);
-      case "river":
-      case "showdown": return Math.min(5, totalCards);
-      default: return 0;
-    }
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (chatContainerRef.current) {
-      setIsDragging(true);
-      const touch = e.touches[0];
-      const rect = chatContainerRef.current.getBoundingClientRect();
-      dragOffset.current = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
-    }
-  };
-
-  const handleTouchMove = (e: TouchEvent) => {
-    if (isDragging && chatContainerRef.current) {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const newX = touch.clientX - dragOffset.current.x;
-      const newY = touch.clientY - dragOffset.current.y;
-      const maxX = window.innerWidth - chatContainerRef.current.offsetWidth;
-      const maxY = window.innerHeight - chatContainerRef.current.offsetHeight;
-      setChatPosition({
-        x: Math.max(0, Math.min(newX, maxX)),
-        y: Math.max(0, Math.min(newY, maxY)),
-      });
-    }
-  };
-
-  const handleTouchEnd = () => setIsDragging(false);
-
-  useEffect(() => {
-    if (isDragging) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-      window.addEventListener("touchmove", handleTouchMove, { passive: false });
-      window.addEventListener("touchend", handleTouchEnd);
-    }
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-      window.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("touchend", handleTouchEnd);
-    };
-  }, [isDragging]);
 
   const joinSeat = (seat: number, chips: number) => {
     if (!currentUser?._id) {
@@ -518,31 +452,52 @@ export default function PokerTable() {
     let betAmount = 0;
     switch (action) {
       case "fold":
-        foldSound.play().catch((err) => console.error("Error playing fold sound:", err));
+        foldSound
+          .play()
+          .catch((err) => console.error("Error playing fold sound:", err));
         break;
       case "check":
-        checkSound.play().catch((err) => console.error("Error playing check sound:", err));
+        checkSound
+          .play()
+          .catch((err) => console.error("Error playing check sound:", err));
         break;
       case "call":
         betAmount = table.currentBet - currentPlayer.currentBet;
-        callSound.play().catch((err) => console.error("Error playing call sound:", err));
-        chipSound.play().catch((err) => console.error("Error playing chip sound:", err));
+        callSound
+          .play()
+          .catch((err) => console.error("Error playing call sound:", err));
+        chipSound
+          .play()
+          .catch((err) => console.error("Error playing chip sound:", err));
         animateChips(currentPlayer.seat, betAmount);
         break;
       case "raise":
         betAmount = amount || raiseAmount;
-        raiseSound.play().catch((err) => console.error("Error playing raise sound:", err));
-        chipSound.play().catch((err) => console.error("Error playing chip sound:", err));
+        raiseSound
+          .play()
+          .catch((err) => console.error("Error playing raise sound:", err));
+        chipSound
+          .play()
+          .catch((err) => console.error("Error playing chip sound:", err));
         animateChips(currentPlayer.seat, betAmount - currentPlayer.currentBet);
         break;
       case "allin":
         betAmount = currentPlayer.chips;
-        raiseSound.play().catch((err) => console.error("Error playing raise sound:", err));
-        chipSound.play().catch((err) => console.error("Error playing chip sound:", err));
+        raiseSound
+          .play()
+          .catch((err) => console.error("Error playing raise sound:", err));
+        chipSound
+          .play()
+          .catch((err) => console.error("Error playing chip sound:", err));
         animateChips(currentPlayer.seat, betAmount);
         break;
     }
-    socket.emit("gameAction", { tableId, action, amount: betAmount, userId: currentUser._id });
+    socket.emit("gameAction", {
+      tableId,
+      action,
+      amount: betAmount,
+      userId: currentUser._id,
+    });
   };
 
   const openModal = (seat: number) => {
@@ -561,22 +516,38 @@ export default function PokerTable() {
     setChipAmount(0);
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const getVisibleCardCount = (round: string, totalCards: number): number => {
+    switch (round) {
+      case "preflop":
+        return 0;
+      case "flop":
+        return Math.min(3, totalCards);
+      case "turn":
+        return Math.min(4, totalCards);
+      case "river":
+      case "showdown":
+        return Math.min(5, totalCards);
+      default:
+        return 0;
+    }
   };
 
-  const toggleChat = () => setIsChatOpen((prev) => !prev);
-
   const isMobile = screenWidth < 768;
-  const tableWidth = isMobile ? 600 : 900;
-  const tableHeight = isMobile ? 900 : 500;
+  const tableWidth = isMobile ? 600 : "80%";
+  const tableHeight = isMobile ? 900 : "80%";
   const scale = Math.min(
     screenWidth / (isMobile ? 700 : 1000),
-    screenHeight / (isMobile ? 1000 : 600)
+    screenHeight / (isMobile ? 1000 : 600),
   );
   const animateDealCards = (
-    players: { user: string; seat: number; cards: [string, string]; chips: number; username: string }[],
-    maxPlayers: number
+    players: {
+      user: string;
+      seat: number;
+      cards: [string, string];
+      chips: number;
+      username: string;
+    }[],
+    maxPlayers: number,
   ) => {
     const container = animationContainerRef.current;
     if (!container || !players?.length || !maxPlayers) {
@@ -591,7 +562,8 @@ export default function PokerTable() {
 
     players.forEach((player, playerIndex) => {
       const seatElement = document.querySelector(`.seat-${player.seat}`);
-      const cardContainer = seatElement?.querySelector(".player-cards") || seatElement;
+      const cardContainer =
+        seatElement?.querySelector(".player-cards") || seatElement;
       if (!seatElement || !cardContainer) {
         console.warn(`Seat element for seat ${player.seat} not found`);
         return;
@@ -618,7 +590,9 @@ export default function PokerTable() {
         totalTime += dealStep;
 
         setTimeout(() => {
-          flipSound.play().catch((err) => console.error("Error playing flip sound:", err));
+          flipSound
+            .play()
+            .catch((err) => console.error("Error playing flip sound:", err));
         }, totalTime - dealStep);
       });
     });
@@ -660,7 +634,8 @@ export default function PokerTable() {
   }));
   const isUserSeated = players.some((p) => p.user === currentUser?._id);
   const currentPlayer = table?.players[table.currentPlayer];
-  const isMyTurn = currentPlayer?.user === currentUser?._id && !currentPlayer?.hasActed;
+  const isMyTurn =
+    currentPlayer?.user === currentUser?._id && !currentPlayer?.hasActed;
 
   return (
     <div
@@ -688,8 +663,8 @@ export default function PokerTable() {
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          width: ${tableWidth}px;
-          height: ${tableHeight}px;
+          width: ${isMobile ? `${tableWidth}px` : tableWidth};
+          height: ${isMobile ? `${tableHeight}px` : tableHeight};
           max-width: 100%;
           max-height: 100%;
         }
@@ -714,7 +689,34 @@ export default function PokerTable() {
           text-align: center;
           border: 2px solid #d4af37;
         }
-          .chip-animate {
+        /* Custom slider styles */
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 16px;
+          height: 16px;
+          background: #d4af37; /* Gold color */
+          border-radius: 50%;
+          cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+          width: 16px;
+          height: 16px;
+          background: #d4af37;
+          border-radius: 50%;
+          cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+          background: #4b5563; /* Gray track */
+          height: 4px;
+          border-radius: 2px;
+        }
+        input[type="range"]::-moz-range-track {
+          background: #4b5563;
+          height: 4px;
+          border-radius: 2px;
+        }
+        .chip-animate {
           position: absolute;
           animation: moveChip ${CHIP_ANIMATION_DURATION}ms ease-out forwards;
         }
@@ -724,7 +726,8 @@ export default function PokerTable() {
             opacity: 1;
           }
           100% {
-            transform: translate(var(--chip-target-x), var(--chip-target-y)) scale(0.8);
+            transform: translate(var(--chip-target-x), var(--chip-target-y))
+              scale(0.8);
             opacity: 0.9;
           }
         }
@@ -753,47 +756,55 @@ export default function PokerTable() {
             onSeatClick={openModal}
             isUserSeated={isUserSeated}
             lastActions={lastActions}
-            currentPlayerId={currentPlayer?._id.toString()} 
+            currentPlayerId={currentPlayer?._id.toString()}
             isAdmin={isAdmin}
             showdownPlayers={showdownPlayers}
           />
           <div
             ref={animationContainerRef}
             className="absolute"
-            style={{ left: "50%", top: "50%", transform: "translate(-50%, -50%)", zIndex: 50 }}
-          />
-         {table.status === "playing" && showCommunityCards && !isDealing && (
-          <div
-            className="absolute flex gap-2"
             style={{
               left: "50%",
-              top: isMobile ? "50%" : "55%", 
-              transform: "translate(-50%, 0)",
-              zIndex: 10, 
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 50,
             }}
-          >
-            {table.communityCards
-              .slice(0, getVisibleCardCount(table.round, table.communityCards.length))
-              .map((cardValue, index) => (
-                <Card
-                  key={`community-static-${index}`}
-                  value={cardValue}
-                  isOpen={true}
-                  style={{
-                    position: "relative",
-                    width: isMobile ? "35px" : "45px",
-                    height: isMobile ? "50px" : "60px",
-                  }}
-                />
-              ))}
-          </div>
-        )}
-         {isAdmin  && (
+          />
+          {table.status === "playing" && showCommunityCards && !isDealing && (
+            <div
+              className="absolute flex gap-2"
+              style={{
+                left: "50%",
+                top: isMobile ? "50%" : "60%",
+                transform: "translate(-50%, 0)",
+                zIndex: 10,
+              }}
+            >
+              {table.communityCards
+                .slice(
+                  0,
+                  getVisibleCardCount(table.round, table.communityCards.length),
+                )
+                .map((cardValue, index) => (
+                  <Card
+                    key={`community-static-${index}`}
+                    value={cardValue}
+                    isOpen={true}
+                    style={{
+                      position: "relative",
+                      width: isMobile ? "35px" : "45px",
+                      height: isMobile ? "50px" : "60px",
+                    }}
+                  />
+                ))}
+            </div>
+          )}
+          {isAdmin && (
             <div
               className="absolute flex gap-1"
               style={{
                 left: "50%",
-                top: isMobile ? "55%" : "55%",
+                top: isMobile ? "55%" : "60%",
                 transform: "translate(-50%, 0)",
                 zIndex: 15,
               }}
@@ -807,7 +818,7 @@ export default function PokerTable() {
                     position: "relative",
                     width: isMobile ? "25px" : "35px",
                     height: isMobile ? "35px" : "50px",
-                    opacity: 0.8, 
+                    opacity: 0.8,
                   }}
                 />
               ))}
@@ -815,6 +826,14 @@ export default function PokerTable() {
           )}
         </div>
       </div>
+
+      <div className="fixed top-[5%] left-8">
+        <p className="text-gray-500">#{table.name}</p>
+      </div>
+
+      <ChatComponent socket={socket} tableId={tableId} currentUser={currentUser} />
+      <Waitinglist table={table}/>
+      <SeatInstruction isUserSeated={isUserSeated} isMobile={isMobile}/>
 
       {isMyTurn && table.status === "playing" && (
         <div
@@ -824,7 +843,9 @@ export default function PokerTable() {
         >
           <div className="flex flex-col items-center gap-2 w-full md:w-64">
             <div className="flex items-center justify-between w-full gap-2">
-              <span className="text-white font-bold text-sm md:text-base">{raiseAmount.toFixed(2)}</span>
+              <span className="text-white font-bold text-sm md:text-base">
+                {raiseAmount.toFixed(2)}
+              </span>
               <input
                 type="range"
                 value={raiseAmount}
@@ -859,15 +880,17 @@ export default function PokerTable() {
                 Check
               </button>
             )}
-            
-            {table.currentBet > currentPlayer.currentBet && table.currentBet > 0 && (
-              <button
-                onClick={() => gameAction("call")}
-                className="px-3 py-1.5 bg-blue-600 rounded-lg hover:bg-blue-700 text-sm md:text-base flex-1 min-w-[80px]"
-              >
-                Call ({(table.currentBet - currentPlayer.currentBet).toFixed(2)})
-              </button>
-            )}
+
+            {table.currentBet > currentPlayer.currentBet &&
+              table.currentBet > 0 && (
+                <button
+                  onClick={() => gameAction("call")}
+                  className="px-3 py-1.5 bg-blue-600 rounded-lg hover:bg-blue-700 text-sm md:text-base flex-1 min-w-[80px]"
+                >
+                  Call (
+                  {(table.currentBet - currentPlayer.currentBet).toFixed(2)})
+                </button>
+              )}
             <button
               onClick={() => gameAction("allin")}
               className="px-3 py-1.5 bg-purple-600 rounded-lg hover:bg-purple-700 text-sm md:text-base flex-1 min-w-[80px]"
@@ -875,83 +898,37 @@ export default function PokerTable() {
               All In
             </button>
           </div>
-          
         </div>
       )}
-
-      <div
-        ref={chatContainerRef}
-        className="flex flex-col"
-        style={{
-          position: "absolute",
-          left: `${chatPosition.x}px`,
-          top: `${chatPosition.y}px`,
-          zIndex: 10,
-          maxWidth: isMobile ? "200px" : "300px",
-          cursor: isDragging ? "grabbing" : "grab",
-        }}
-      >
-        <button
-          onMouseDown={handleMouseDown}
-          onTouchStart={handleTouchStart}
-          onClick={toggleChat}
-          className="self-start mb-2 p-2 bg-red-700 rounded-2xl hover:bg-red-600"
-        >
-          <Image src={tableChatIcon} alt="Toggle Chat" width={isMobile ? 20 : 40} height={isMobile ? 20 : 40} />
-        </button>
-        {isChatOpen && (
-          <>
-            <div
-              className="flex-1 overflow-y-auto bg-gray-900 p-2 rounded-lg border text-xs"
-              style={{ maxHeight: isMobile ? "25vh" : "200px" }}
-            >
-              {messages.map((msg, index) => (
-                <div key={index} className="mb-1">
-                  <span className="text-blue-400 font-bold text-xs">
-                    {msg.user.name || `User_${msg.user._id.slice(0, 6)}`}:{" "}
-                  </span>
-                  <span className="text-xs">{msg.content}</span>
-                  <span className="text-xs text-gray-400 ml-2">
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </span>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-            <div className="mt-2 flex">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                className="flex-1 p-1 rounded-l-lg bg-gray-700 text-white border focus:outline-none text-xs"
-                placeholder="Сэтгэгдэлээ бичих..."
-              />
-              <button
-                onClick={handleSendMessage}
-                className="p-1 bg-blue-500 text-gray-900 rounded-r-lg hover:bg-yellow-600 text-xs"
-              >
-                Илгээх
-              </button>
-            </div>
-          </>
-        )}
-      </div>
 
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h2 className="text-xl font-bold text-white mb-4">Суудал {selectedSeat}</h2>
-            <p className="text-gray-300 mb-4">Ширээнд суух хамгийн бага дүн: {table?.buyIn || 0} ₮</p>
-            <input
-              type="number"
-              value={chipAmount}
-              onChange={(e) => setChipAmount(Number(e.target.value))}
-              min={table?.buyIn || 0}
-              className="w-full p-2 mb-4 bg-gray-700 text-white rounded-lg border border-gold-600 focus:outline-none focus:ring-2 focus:ring-gold-500"
-              placeholder="Enter chip amount"
-            />
-            <div className="flex justify-between">
+            <h2 className="text-xl font-bold text-white mb-4">
+              Суудал {selectedSeat}
+            </h2>
+            <p className="text-gray-300 mb-4">
+              Ширээнд суух хамгийн бага дүн: {table?.buyIn || 0} ₮
+            </p>
+
+            <div className="flex flex-col items-center gap-2 w-full">
+              <div className="flex items-center justify-between w-full gap-2">
+                <span className="text-white font-bold text-sm md:text-base">
+                  {chipAmount.toFixed(2)} ₮
+                </span>
+                <input
+                  type="range"
+                  value={chipAmount}
+                  onChange={(e) => setChipAmount(Number(e.target.value))}
+                  min={table?.buyIn || 0}
+                  max={currentUser?.amount}
+                  step={10}
+                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between mt-4">
               <button
                 onClick={closeModal}
                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
@@ -959,7 +936,9 @@ export default function PokerTable() {
                 Үгүй
               </button>
               <button
-                onClick={() => selectedSeat !== null && joinSeat(selectedSeat, chipAmount)}
+                onClick={() =>
+                  selectedSeat !== null && joinSeat(selectedSeat, chipAmount)
+                }
                 disabled={chipAmount < (table?.buyIn || 0)}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-500 disabled:opacity-50"
               >
@@ -971,16 +950,4 @@ export default function PokerTable() {
       )}
     </div>
   );
-
-  function handleSendMessage() {
-    if (!newMessage.trim() || !currentUser?._id) return;
-    const messageData = {
-      lobbyId: tableId,
-      userId: currentUser._id,
-      content: newMessage,
-    };
-    socket.emit("sendMessage", messageData);
-    setNewMessage("");
-    scrollToBottom();
-  }
 }

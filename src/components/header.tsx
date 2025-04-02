@@ -5,6 +5,7 @@ import info from "../../public/poker/info.svg";
 import home from "../../public/poker/home.svg";
 import addmoney from "../../public/poker/addmoney.svg";
 import leave from "../../public/poker/tableexit.svg";
+import fullscreenIcon from "../../public/poker/fullscreen.svg";
 import { useState, useEffect } from "react";
 import { authApi } from "@/apis/";
 import useSWR from "swr";
@@ -24,6 +25,9 @@ export function Header() {
   const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
   const [addAmount, setAddAmount] = useState<number>(0);
   const [tableData, setTableData] = useState<any>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [hasAutoFullscreenTriggered, setHasAutoFullscreenTriggered] = useState(false);
 
   const { data: currentUser } = useSWR("swr.user.me", async () => {
     try {
@@ -87,10 +91,23 @@ export function Header() {
     }
 
     if (window.confirm("Are you sure you want to leave the table?")) {
-      console.log("Leaving table:", tableId, "with user:", currentUser?._id);
       socket.emit("leaveSeat", { tableId, userId: currentUser._id });
     } else {
       message.success("Leave action canceled");
+    }
+  };
+
+  const handleFullscreenToggle = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement
+        .requestFullscreen()
+        .then(() => setIsFullscreen(true))
+        .catch((err) => message.error(`Failed to enter fullscreen: ${err.message}`));
+    } else {
+      document
+        .exitFullscreen()
+        .then(() => setIsFullscreen(false))
+        .catch((err) => message.error(`Failed to exit fullscreen: ${err.message}`));
     }
   };
 
@@ -100,45 +117,73 @@ export function Header() {
     false;
 
   useEffect(() => {
+    const updateScreenSize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    updateScreenSize();
+    window.addEventListener("resize", updateScreenSize);
+    return () => window.removeEventListener("resize", updateScreenSize);
+  }, []);
+
+  useEffect(() => {
     if (!currentUser?._id) return;
 
     const tableId = window.location.pathname.split("/")[2];
     if (tableId) {
-      socket.emit("getTableData", tableId);
+      socket.emit("getTableData", tableId); // Fetch initial table data on mount
+
+      socket.on("connect", () => {
+        socket.emit("getTableData", tableId); // Re-fetch on reconnect
+      });
+
+      socket.on("tableData", (data) => {
+        setTableData(data);
+      });
+
+      socket.on("tableUpdate", (data) => {
+        setTableData(data);
+      });
+
+      socket.on("joinedTable", (data) => {
+        setTableData(data);
+      });
+
+      socket.on("seatJoined", ({ table }) => {
+        setTableData(table);
+      });
+
+      socket.on("leftTable", ({ chipsRefunded }) => {
+        message.success(`You have left the table and reclaimed ${chipsRefunded} chips`);
+        router.push("/");
+        setHasAutoFullscreenTriggered(false);
+        setTableData(null); 
+      });
+
+      socket.on("error", (err) => {
+        message.error(err?.message || err || "An error occurred");
+        setIsInfoPanelOpen(false);
+      });
+
+      const handleFullscreenChange = () => {
+        setIsFullscreen(!!document.fullscreenElement);
+      };
+      document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+      // Join the table room explicitly
+      socket.emit("joinTable", { userId: currentUser._id, tableId });
+
+      return () => {
+        socket.off("connect");
+        socket.off("tableData");
+        socket.off("tableUpdate");
+        socket.off("joinedTable");
+        socket.off("seatJoined");
+        socket.off("leftTable");
+        socket.off("error");
+        document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      };
     }
-
-    socket.on("tableData", (data) => {
-      setTableData(data);
-    });
-
-    socket.on("tableUpdate", (data) => {
-      setTableData(data);
-    });
-
-    socket.on("joinedTable", (data) => {
-      setTableData(data);
-    });
-
-    socket.on("leftTable", ({ chipsRefunded }) => {
-      message.success(`You have left the table and reclaimed ${chipsRefunded} chips`);
-      router.push("/");
-    });
-
-    socket.on("error", (err) => {
-      message.error(err?.message || err || "An error occurred");
-      setIsInfoPanelOpen(false);
-    });
-
-    return () => {
-      socket.off("tableData");
-      socket.off("tableUpdate");
-      socket.off("joinedTable");
-      socket.off("leftTable");
-      socket.off("error");
-    };
   }, [currentUser?._id, router]);
-
-  useEffect(() => {}, [isPlayerAtTable, tableData, currentUser]);
 
   return (
     <div className="top-0 z-40 flex h-[5%] shrink-0 items-center gap-x-4 bg-transparent px-4 sm:gap-x-6 sm:px-8">
@@ -218,6 +263,14 @@ export function Header() {
         <div className="flex-1" />
         {isPlayerAtTable && (
           <div className="flex items-center gap-x-4 lg:gap-x-6">
+            {!isMobile && (
+              <Image
+                src={fullscreenIcon}
+                alt="fullscreen"
+                onClick={handleFullscreenToggle}
+                className="cursor-pointer fullscreen-icon"
+              />
+            )}
             <Image
               src={leave}
               alt="leave"
@@ -231,6 +284,12 @@ export function Header() {
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        .fullscreen-icon {
+          filter: brightness(0) invert(1);
+        }
+      `}</style>
 
       {isAddMoneyModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">

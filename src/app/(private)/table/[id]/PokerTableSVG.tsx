@@ -110,10 +110,10 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
   const getSeatPosition = (index: number, totalSeats: number) => {
     const centerX = isMobile ? 420 : 512;
     const centerY = isMobile ? 636 : 267;
-    const radiusX = isMobile ? 350 : 450;
-    const radiusY = isMobile ? 570 : 220;
+    const radiusX = isMobile ? 350 : 490;
+    const radiusY = isMobile ? 570 : 250;
 
-    const angleOffset = Math.PI / 2; // Start from top
+    const angleOffset = Math.PI / 2; 
     const angleStep = (2 * Math.PI) / totalSeats;
     const angle = angleOffset + index * angleStep;
 
@@ -156,7 +156,8 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
         height="100vh"
         viewBox="-122 -64 1228 640"
         preserveAspectRatio="xMidYMin meet"
-        className="max-w-full max-h-full"
+        className="max-w-full max-h-full "
+        
       >
         {/* Define animations */}
         <style>
