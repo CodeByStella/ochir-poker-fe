@@ -12,7 +12,6 @@ import useSWR from "swr";
 import io from "socket.io-client";
 import { useDispatch } from "react-redux";
 import { siteApi } from "@/config/site";
-
 const socket = io(`${siteApi}`, {
   withCredentials: true,
   reconnection: true,
@@ -156,7 +155,7 @@ export function Header() {
         message.success(`You have left the table and reclaimed ${chipsRefunded} chips`);
         router.push("/");
         setHasAutoFullscreenTriggered(false);
-        setTableData(null); 
+        setTableData(null);
       });
 
       socket.on("error", (err) => {
