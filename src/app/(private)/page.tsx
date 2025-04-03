@@ -7,6 +7,8 @@ import io, { Socket } from "socket.io-client";
 import { motion } from "framer-motion";
 import { useDispatch } from "react-redux";
 import { authApi } from "@/apis";
+import { IBank } from "@/models/bank";
+import { bankApi } from "@/apis";
 import { withdraw } from "@/apis/money";
 import { ITable } from "@/models/lobby";
 import { siteApi } from "@/config/site";
@@ -88,6 +90,14 @@ export default function PokerRoomList() {
       return tables;
     },
     { refreshInterval: 5000 }
+  );
+
+  const { data: bankData, error: bankError } = useSWR<IBank[]>(
+    "swr.bank.me",
+    async () => {
+      const res = await bankApi.getBank();
+      return res;
+    }
   );
 
   const { trigger: triggerWithdraw } = useSWRMutation(
@@ -287,6 +297,8 @@ export default function PokerRoomList() {
         setIsWithdrawModalOpen={setIsWithdrawModalOpen}
         setIsLoginModalOpen={setIsLoginModalOpen}
         isSidebarOpen={isSidebarOpen}
+        bankData={bankData} 
+        bankError={bankError}
       />
 
       <MobileBottomNav
@@ -297,6 +309,8 @@ export default function PokerRoomList() {
         isCassOpen={isCassOpen}
         setIsCassOpen={setIsCassOpen}
         lobbyMessages={lobbyMessages}
+        bankData={bankData} 
+        bankError={bankError}
       />
 
       <WithdrawModal
