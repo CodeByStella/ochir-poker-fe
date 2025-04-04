@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IBank } from "@/models/bank";
+import { IUser } from "@/models/user";
 
 interface MobileBottomNavProps {
   isSidebarOpen: boolean;
@@ -12,6 +13,7 @@ interface MobileBottomNavProps {
   lobbyMessages: any[];
   bankData?: IBank[]; 
   bankError?: any;
+  userData: any;
 }
 
 interface CopyableBankNumberProps {
@@ -65,6 +67,7 @@ export default function MobileBottomNav({
   setIsCassOpen,
   lobbyMessages,
   bankData,
+  userData,
   bankError,
 }: MobileBottomNavProps) {
   return (
@@ -206,6 +209,10 @@ export default function MobileBottomNav({
                     <p className="text-lg font-medium text-white">
                       Цэнэглэлт хийх данс:{" "}
                       <CopyableBankNumber number={String(bank.bankAccount)} />
+                    </p>
+                    <p className="text-lg font-medium text-white">
+                      Миний нэр:{" "}
+                      <CopyableBankNumber number={String(userData?.name)} />
                     </p>
                   </div>
                 ))

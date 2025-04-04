@@ -1,7 +1,9 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Socket } from "socket.io-client";
+import { IUser } from "@/models/user";
 
 interface Message {
   chatType: "table" | "lobby";
@@ -13,7 +15,7 @@ interface Message {
 interface ChatComponentProps {
   socket: Socket;
   tableId: string;
-  currentUser: { _id: string; name: string; role: string } | null;
+  currentUser?: IUser | null;
 }
 
 export default function ChatComponent({ socket, tableId, currentUser }: ChatComponentProps) {
@@ -104,7 +106,7 @@ export default function ChatComponent({ socket, tableId, currentUser }: ChatComp
   return (
     <>
       {isMobile ? (
-        <div className="fixed bottom-0 left-0 w-[30%] p-2 flex flex-col items-start h-[15%]">
+        <div className="fixed bottom-10 left-0 w-[30%] p-2 flex flex-col items-start h-[15%]">
           <div className="flex flex-col space-y-2">
             <div
               className={`w-10 h-10 flex items-center justify-center rounded-md cursor-pointer ${

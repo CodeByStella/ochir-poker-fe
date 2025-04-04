@@ -5,12 +5,12 @@ import useSWR, { useSWRConfig } from "swr";
 import useSWRMutation from "swr/mutation";
 import io, { Socket } from "socket.io-client";
 import { motion } from "framer-motion";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { authApi } from "@/apis";
 import { IBank } from "@/models/bank";
 import { bankApi } from "@/apis";
 import { withdraw } from "@/apis/money";
-import { ITable } from "@/models/lobby";
+import { ITable } from "@/models/table";
 import { siteApi } from "@/config/site";
 import { logout } from "@/store/auth-slice";
 import LoginModal from "@/components/modal/Login";
@@ -22,6 +22,8 @@ import MobileBottomNav from "../../components/PokerRoomList/MobileBottomNav";
 import WithdrawModal from "../../components/PokerRoomList/WithdrawModal";
 import TournamentList from "../../components/PokerRoomList/TournamentList";
 import { message } from "@/utils/toast";
+import { RootState } from "@/store";
+import { IUser } from "@/models/user";
 
 const socket: Socket = io(`${siteApi}`, {
   withCredentials: true,
@@ -29,19 +31,6 @@ const socket: Socket = io(`${siteApi}`, {
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
 });
-
-interface IUser {
-  _id: string;
-  user: string;
-  name: string;
-  chips: number;
-  seat: number;
-  cards: [string, string];
-  inHand: boolean;
-  currentBet: number;
-  hasActed: boolean;
-  amount: string;
-}
 
 interface SelectedRoom {
   id: string;
@@ -72,10 +61,11 @@ export default function PokerRoomList() {
   const [winners, setWinners] = useState<WinnerData[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isCassOpen, setIsCassOpen] = useState(false);
-  const [lobbyMessages, setLobbyMessages] = useState<any[]>([])
+  const [lobbyMessages, setLobbyMessages] = useState<any[]>([]);
   const { mutate } = useSWRConfig();
+  const {token} = useSelector((state: RootState) => state.auth);
 
-  const { data: userData } = useSWR<IUser>("swr.auth.me", async () => {
+  const { data: userData } = useSWR<IUser>(`swr.auth.me.${token}`, async () => {
     const res = await authApi.me();
     return res;
   });
@@ -184,7 +174,7 @@ export default function PokerRoomList() {
       socket.off("connect");
       socket.off("disconnect");
     };
-  }, [selectedRoom, swrLobbies]);
+  }, [lobbies.length, selectedRoom, swrLobbies]);
 
   const joinedTable = (tableId: string) => {
     router.push(`/table/${tableId}`);
@@ -311,6 +301,7 @@ export default function PokerRoomList() {
         lobbyMessages={lobbyMessages}
         bankData={bankData} 
         bankError={bankError}
+        userData={userData}
       />
 
       <WithdrawModal

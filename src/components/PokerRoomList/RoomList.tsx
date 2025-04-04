@@ -1,6 +1,6 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ITable } from "@/models/lobby";
+import { ITable } from "@/models/table";
 
 interface Room {
   id: string;

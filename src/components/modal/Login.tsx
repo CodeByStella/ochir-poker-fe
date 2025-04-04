@@ -1,7 +1,7 @@
 "use client";
 import { authApi } from '@/apis';
 import { Modal } from 'antd';
-import React, { Dispatch, SetStateAction, useState } from 'react';
+import React, { Dispatch, memo, SetStateAction, useCallback, useState } from 'react';
 import { Controller, useForm } from "react-hook-form";
 import toast from 'react-hot-toast';
 import './LoginModal.css';
@@ -19,12 +19,13 @@ export type ILoginForm = {
 
 export type ISignUpForm = {
   name: string;
-  bankAccount: string;
+  bankAccount: number;
   password: string;
   bankType?: string;
+  confirmPassword: string;
 };
 
-const LoginModal = ({ modal, setModal, onSuccessfulLogin }: Props) => {
+const LoginModal = memo(({ modal, setModal, onSuccessfulLogin }: Props) => {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
 
   const {
@@ -43,9 +44,12 @@ const LoginModal = ({ modal, setModal, onSuccessfulLogin }: Props) => {
     control: signUpControl,
     setError: setSignUpError,
     reset: resetSignUp,
+    watch,
   } = useForm<ISignUpForm>({
-    defaultValues: { name: '', bankType: '', password: '', bankAccount: '' },
+    defaultValues: { name: '', bankType: '', password: '', confirmPassword: '' },
   });
+
+  const password = watch('password'); 
 
   const onLoginSubmit = async (data: ILoginForm) => {
     try {
@@ -93,7 +97,7 @@ const LoginModal = ({ modal, setModal, onSuccessfulLogin }: Props) => {
     >
       <div className="flex flex-col md:flex-row h-auto md:h-[400px]">
         <div
-          className="hidden md:block w-full md:w-1/2 p-6  flex-col justify-between relative bg-cover bg-center bg-no-repeat bg-[url('/qwe.jpg')] bg-[#1a1b1e]"
+          className="hidden md:block w-full md:w-1/2 p-6 flex-col justify-between relative bg-cover bg-center bg-no-repeat bg-[url('/qwe.jpg')] bg-[#1a1b1e]"
           style={{ borderRadius: '8px 0 0 8px' }}
         >
         </div>
@@ -140,13 +144,18 @@ const LoginModal = ({ modal, setModal, onSuccessfulLogin }: Props) => {
                 rules={{ required: "Банк төрөл оруулна уу" }}
                 render={({ field }) => (
                   <div>
-                    <input
+                    <select
                       {...field}
                       disabled={isSignUpSubmitting}
                       className="w-full p-2 bg-gray-800 text-white rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
-                      placeholder="Банк нэр"
                       autoComplete="bankType"
-                    />
+                    >
+                      <option value="">Банк сонгоно уу</option>
+                      <option value="Khan Bank">Хаан Банк</option>
+                      <option value="Golomt Bank">Голомт Банк</option>
+                      <option value="TDB">Худалдаа хөгжил Банк</option>
+                      <option value="Khas Bank">Хас Банк</option>
+                    </select>
                     {signUpErrors.bankType && (
                       <p className="text-red-500 text-sm mt-1">{signUpErrors.bankType.message}</p>
                     )}
@@ -161,6 +170,7 @@ const LoginModal = ({ modal, setModal, onSuccessfulLogin }: Props) => {
                   <div>
                     <input
                       {...field}
+                      type="number"
                       disabled={isSignUpSubmitting}
                       className="w-full p-2 bg-gray-800 text-white rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
                       placeholder="Дансны дугаар"
@@ -175,7 +185,10 @@ const LoginModal = ({ modal, setModal, onSuccessfulLogin }: Props) => {
               <Controller
                 name="password"
                 control={signUpControl}
-                rules={{ required: "Нууц үг оруулна уу" }}
+                rules={{ 
+                  required: "Нууц үг оруулна уу",
+                  // minLength: { value: 8, message: "Нууц үг хамгийн багадаа 8 тэмдэгт байх ёстой" }
+                }}
                 render={({ field }) => (
                   <div>
                     <input
@@ -188,6 +201,29 @@ const LoginModal = ({ modal, setModal, onSuccessfulLogin }: Props) => {
                     />
                     {signUpErrors.password && (
                       <p className="text-red-500 text-sm mt-1">{signUpErrors.password.message}</p>
+                    )}
+                  </div>
+                )}
+              />
+              <Controller
+                name="confirmPassword"
+                control={signUpControl}
+                rules={{ 
+                  required: "Нууц үгээ давтан оруулна уу",
+                  validate: value => value === password || "Нууц үг таарахгүй байна"
+                }}
+                render={({ field }) => (
+                  <div>
+                    <input
+                      {...field}
+                      type="password"
+                      disabled={isSignUpSubmitting}
+                      className="w-full p-2 bg-gray-800 text-white rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
+                      placeholder="Нууц үгээ давтан оруулна уу*"
+                      autoComplete="new-password"
+                    />
+                    {signUpErrors.confirmPassword && (
+                      <p className="text-red-500 text-sm mt-1">{signUpErrors.confirmPassword.message}</p>
                     )}
                   </div>
                 )}
@@ -274,6 +310,8 @@ const LoginModal = ({ modal, setModal, onSuccessfulLogin }: Props) => {
       </div>
     </Modal>
   );
-};
+});
+
+LoginModal.displayName="LoginModal"
 
 export default LoginModal;

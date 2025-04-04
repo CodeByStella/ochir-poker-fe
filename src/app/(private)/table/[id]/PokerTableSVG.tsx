@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import Image from "next/image";
-import { IPlayer } from "../../../../models/lobby";
-import Card from "../../../../components/card/Card";
-
+import { AvatarLogo } from "@/components/icons/avatar";
+import { IPlayer } from "@/models/player";
 interface PokerTableSVGProps {
   scale: number;
   pot: number;
@@ -28,7 +27,18 @@ interface PlayerAction {
   timestamp: Date;
 }
 
-export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
+const throttle = (func: (...args: any[]) => void, limit: number) => {
+  let inThrottle: boolean;
+  return (...args: any[]) => {
+    if (!inThrottle) {
+      func(...args);
+      inThrottle = true;
+      setTimeout(() => (inThrottle = false), limit);
+    }
+  };
+};
+
+export const PokerTableSVG = memo(({
   scale,
   pot,
   players = [],
@@ -44,19 +54,22 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
   currentPlayerId,
   isAdmin,
   showdownPlayers = [],
-}) => {
+}: PokerTableSVGProps) => {
   const [isMobile, setIsMobile] = useState(false);
 
-  const updateDeviceType = () => {
+  const updateDeviceType = useCallback(() => {
     const mobileBreakpoint = 768;
     setIsMobile(window.innerWidth < mobileBreakpoint);
-  };
+  }, []); 
 
   useEffect(() => {
     updateDeviceType();
-    window.addEventListener("resize", updateDeviceType);
-    return () => window.removeEventListener("resize", updateDeviceType);
-  }, []);
+
+    const handleResize = throttle(updateDeviceType, 200);
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, [updateDeviceType]); 
 
   const chipImages = [
     { src: "/poker/chip.svg", value: 0 },
@@ -113,7 +126,7 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
     const radiusX = isMobile ? 350 : 490;
     const radiusY = isMobile ? 570 : 250;
 
-    const angleOffset = Math.PI / 2; 
+    const angleOffset = Math.PI / 2;
     const angleStep = (2 * Math.PI) / totalSeats;
     const angle = angleOffset + index * angleStep;
 
@@ -147,17 +160,42 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
   const seatSize = isMobile ? 100 : 70;
   const fontSizeMultiplier = isMobile ? 1.5 : 1;
 
+  const getCardImagePath = (card: string) => {
+    const suit = card.slice(-1);
+    const value = card.slice(0, -1);
+
+    let folder = "";
+    switch (suit) {
+      case "c":
+        folder = "clubs";
+        break;
+      case "d":
+        folder = "diamonds";
+        break;
+      case "s":
+        folder = "spades";
+        break;
+      case "h":
+        folder = "hearts";
+        break;
+      default:
+        return "/card.png";
+    }
+
+    return `/cards/${folder}/${value}${suit}.svg`;
+  };
+
+  const memoImage = useCallback((avatar?: string) =>  <AvatarLogo width={seatSize} height={seatSize}/>,[seatSize])
+
   const DesktopSVG = () => {
     const chipStack = getChipStack(pot);
-
     return (
       <svg
         width="100vw"
         height="100vh"
-        viewBox="-122 -64 1228 640"
+        viewBox="-122 -64 1228 700"
         preserveAspectRatio="xMidYMin meet"
-        className="max-w-full max-h-full "
-        
+        className="max-w-full max-h-full"
       >
         {/* Define animations */}
         <style>
@@ -256,8 +294,6 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
           const isWinner = seat.occupied && winners.some((w) => w.playerId === seat.player?._id.toString());
           const winnerData = isWinner ? winners.find((w) => w.playerId === seat.player?._id.toString()) : null;
           const lastAction = seat.occupied && seat.player ? lastActions?.get(seat.player._id.toString()) : null;
-          const isCurrentPlayer = seat.occupied && seat.player?._id.toString() === currentPlayerId && tableStatus === "playing";
-          const showdownData = seat.occupied && showdownPlayers.find((sp) => sp.playerId === seat.player?._id.toString());
 
           return (
             <g key={`seat-${seat.seatIndex}`} className={`seat-${seat.seatIndex}`} transform={`translate(${x - seatSize / 2}, ${y - seatSize / 2})`}>
@@ -302,19 +338,6 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
                     </g>
                   )}
 
-              {tableStatus === "playing" && seat.player.cards && seat.player.cards.length > 0 && !isDealing && (
-                  <g transform={`translate(${x < 512 ? -90 : seatSize + 10}, -30)`}>
-                    {(typeof showdownData === "object" && showdownData.cards ? showdownData.cards : seat.player.cards).map((card, idx) => (
-                      <foreignObject key={idx} x={idx * 45} y={0} width={40} height={56}>
-                        <Card
-                          value={card}
-                          isOpen={isAdmin || seat.player?.user === currentUserId || (showdownData !== undefined && winners.length > 0)} // Ensure boolean
-                          style={{ width: "40px", height: "56px" }}
-                        />
-                      </foreignObject>
-                    ))}
-                  </g>
-                )}
                   <foreignObject x={0} y={0} width={seatSize} height={seatSize}>
                     <div
                       style={{
@@ -324,13 +347,7 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
                         overflow: "hidden",
                       }}
                     >
-                      <Image
-                        src={seat.player.avatar || "/asset/65.png"}
-                        alt={seat.player.username}
-                        width={seatSize}
-                        height={seatSize}
-                        style={{ objectFit: "cover" }}
-                      />
+                      {memoImage()}
                     </div>
                   </foreignObject>
 
@@ -338,17 +355,17 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
                   {lastAction && (
                     <g transform={`translate(0, ${seatSize})`}>
                       <rect
-                        x={-seatSize + 50}
-                        y={-10}
-                        width={seatSize * 2}
+                        x={-seatSize + 80}
+                        y={0}
+                        width={seatSize}
                         height={20}
                         rx={5}
                         fill="#1f2937"
                         opacity="0.9"
                       />
                       <text
-                        x={0}
-                        y={5}
+                        x={-seatSize + 115}
+                        y={15}
                         textAnchor="middle"
                         fill="#fff"
                         fontSize={fontSizeMultiplier * 12}
@@ -446,6 +463,38 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
               )}
             </g>
           );
+        })}
+
+        {/* Render Cards as Top-Level Elements */}
+        {displayPositions.map((seat) => {
+          const { x, y } = getSeatPosition(seat.seatIndex, cappedMaxPlayers);
+          const showdownData = seat.occupied && showdownPlayers.find((sp) => sp.playerId === seat.player?._id.toString());
+          if (
+            seat.occupied &&
+            seat.player &&
+            tableStatus === "playing" &&
+            seat.player.cards &&
+            seat.player.cards.length > 0 &&
+            !isDealing
+          ) {
+            const cardX = x < 512 ? x - 130 : x + seatSize - 30;
+            const cardY = y - 30;
+            const isCardOpen = isAdmin || seat.player?.user === currentUserId || (showdownData !== undefined && winners.length > 0);
+
+            return (typeof showdownData === "object" && showdownData.cards ? showdownData.cards : seat.player.cards).map((card, idx) => (
+              <g key={`${seat.seatIndex}-card-${idx}`}>
+                <image
+                  x={cardX + idx * 45}
+                  y={cardY}
+                  width={40}
+                  height={56}
+                  href={isCardOpen ? getCardImagePath(card) : "/card.png"}
+                  preserveAspectRatio="xMidYMid meet"
+                />
+              </g>
+            ));
+          }
+          return null;
         })}
       </svg>
     );
@@ -552,13 +601,13 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
         <text x="424.5" y="495" textAnchor="middle" fill="#fff" fontFamily="bold" fontSize="36">
           Пот: {pot.toFixed(2)}
         </text>
+
+        {/* Player Seats */}
         {displayPositions.map((seat) => {
           const { x, y } = getSeatPosition(seat.seatIndex, cappedMaxPlayers);
           const isWinner = seat.occupied && winners.some((w) => w.playerId === seat.player?._id.toString());
           const winnerData = isWinner ? winners.find((w) => w.playerId === seat.player?._id.toString()) : null;
           const lastAction = seat.occupied && seat.player ? lastActions?.get(seat.player._id.toString()) : null;
-          const isCurrentPlayer = seat.occupied && seat.player?._id.toString() === currentPlayerId && tableStatus === "playing";
-          const showdownData = seat.occupied && showdownPlayers.find((sp) => sp.playerId === seat.player?._id.toString());
 
           return (
             <g key={`seat-${seat.seatIndex}`} className={`seat-${seat.seatIndex}`} transform={`translate(${x - seatSize / 2}, ${y - seatSize / 2})`}>
@@ -603,19 +652,6 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
                     </g>
                   )}
 
-              {tableStatus === "playing" && seat.player.cards && seat.player.cards.length > 0 && !isDealing && (
-                  <g transform={`translate(${x < 512 ? -90 : seatSize + 10}, -30)`}>
-                    {(typeof showdownData === "object" && showdownData.cards ? showdownData.cards : seat.player.cards).map((card, idx) => (
-                      <foreignObject key={idx} x={idx * 45} y={0} width={40} height={56}>
-                        <Card
-                          value={card}
-                          isOpen={isAdmin || seat.player?.user === currentUserId || (showdownData !== undefined && winners.length > 0)} // Ensure boolean
-                          style={{ width: "40px", height: "56px" }}
-                        />
-                      </foreignObject>
-                    ))}
-                  </g>
-                )}
                   <foreignObject x={0} y={0} width={seatSize} height={seatSize}>
                     <div
                       style={{
@@ -625,13 +661,7 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
                         overflow: "hidden",
                       }}
                     >
-                      <Image
-                        src={seat.player.avatar || "/asset/65.png"}
-                        alt={seat.player.username}
-                        width={seatSize}
-                        height={seatSize}
-                        style={{ objectFit: "cover" }}
-                      />
+                   {memoImage()}
                     </div>
                   </foreignObject>
 
@@ -639,17 +669,17 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
                   {lastAction && (
                     <g transform={`translate(0, ${seatSize})`}>
                       <rect
-                        x={-seatSize}
-                        y={-10}
-                        width={seatSize * 2}
+                        x={-seatSize + 80}
+                        y={0}
+                        width={seatSize}
                         height={20}
                         rx={5}
                         fill="#1f2937"
                         opacity="0.9"
                       />
                       <text
-                        x={0}
-                        y={5}
+                        x={-seatSize +130}
+                        y={15}
                         textAnchor="middle"
                         fill="#fff"
                         fontSize={fontSizeMultiplier * 12}
@@ -659,6 +689,7 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
                       </text>
                     </g>
                   )}
+                  
 
                   {/* Username and Chips */}
                   <foreignObject x={-seatSize + 40} y={seatSize + 20} width={seatSize * 2} height={60}>
@@ -741,9 +772,43 @@ export const PokerTableSVG: React.FC<PokerTableSVGProps> = ({
             </g>
           );
         })}
+
+        {/* Render Cards as Top-Level Elements */}
+        {displayPositions.map((seat) => {
+          const { x, y } = getSeatPosition(seat.seatIndex, cappedMaxPlayers);
+          const showdownData = seat.occupied && showdownPlayers.find((sp) => sp.playerId === seat.player?._id.toString());
+          if (
+            seat.occupied &&
+            seat.player &&
+            tableStatus === "playing" &&
+            seat.player.cards &&
+            seat.player.cards.length > 0 &&
+            !isDealing
+          ) {
+            const cardX = x < 420 ? x - 190 : x + seatSize - 60;
+            const cardY = y - 70;
+            const isCardOpen = isAdmin || seat.player?.user === currentUserId || (showdownData !== undefined && winners.length > 0);
+
+            return (typeof showdownData === "object" && showdownData.cards ? showdownData.cards : seat.player.cards).map((card, idx) => (
+              <g key={`${seat.seatIndex}-card-${idx}`}>
+                <image
+                  x={cardX + idx * 70}
+                  y={cardY}
+                  width={60}
+                  height={80}
+                  href={isCardOpen ? getCardImagePath(card) : "/card.png"}
+                  preserveAspectRatio="xMidYMid meet"
+                />
+              </g>
+            ));
+          }
+          return null;
+        })}
       </svg>
     );
   };
 
   return isMobile ? <MobileSVG /> : <DesktopSVG />;
-};
+});
+
+PokerTableSVG.displayName="displayName"
