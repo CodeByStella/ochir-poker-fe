@@ -544,7 +544,6 @@ export default function PokerTable() {
   const maxPlayers = table.maxPlayers || 0;
   const players = table.players.map((player) => ({
     ...player,
-    avatar: "/asset/avatar.svg",
   }));
   const isUserSeated = players.some((p) => p.user === currentUser?._id);
   const currentPlayer = table?.players[table.currentPlayer];

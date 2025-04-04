@@ -185,7 +185,7 @@ export const PokerTableSVG = memo(({
     return `/cards/${folder}/${value}${suit}.svg`;
   };
 
-  const memoImage = useCallback((avatar?: string) =>  <AvatarLogo width={seatSize} height={seatSize}/>,[seatSize])
+  const memoImage = useCallback(() =>  <AvatarLogo width={seatSize} height={seatSize}/>,[seatSize])
 
   const DesktopSVG = () => {
     const chipStack = getChipStack(pot);
@@ -343,11 +343,50 @@ export const PokerTableSVG = memo(({
                       style={{
                         width: `${seatSize}px`,
                         height: `${seatSize}px`,
-                        borderRadius: "50%",
-                        overflow: "hidden",
+                        position:"relative",
                       }}
                     >
+                      <Image
+                      src={"/star1.png"}
+                      alt="coin"
+                      width={36}
+                      height={36}
+                      className="absolute"
+                      style={{
+                        top:0,
+                        left:-5,
+                        zIndex:4
+                      }}
+                      />
+                      <div
+                      style={{
+                        position:"absolute",
+                        top:0,
+                        left:0,
+                        bottom:0,
+                        width: `${seatSize}px`,
+                        height: `${seatSize + 5}px`,
+                        borderRadius:"50%",
+                        backgroundImage: `url('/cover.png')`,
+                        backgroundSize:"contain",
+                        backgroundPosition:"center",
+                        zIndex:1,
+                      }}
+                      />
+                       <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+        zIndex: 2, // Higher z-index to bring it to the front
+        
+      }}
+    >
                       {memoImage()}
+    </div>
                     </div>
                   </foreignObject>
 
@@ -652,16 +691,55 @@ export const PokerTableSVG = memo(({
                     </g>
                   )}
 
-                  <foreignObject x={0} y={0} width={seatSize} height={seatSize}>
+<foreignObject x={0} y={0} width={seatSize} height={seatSize}>
                     <div
                       style={{
                         width: `${seatSize}px`,
                         height: `${seatSize}px`,
-                        borderRadius: "50%",
-                        overflow: "hidden",
+                        position:"relative",
                       }}
                     >
-                   {memoImage()}
+                      <Image
+                      src={"/star1.png"}
+                      alt="coin"
+                      width={36}
+                      height={36}
+                      className="absolute"
+                      style={{
+                        top:0,
+                        left:-5,
+                        zIndex:4
+                      }}
+                      />
+                      <div
+                      style={{
+                        position:"absolute",
+                        top:0,
+                        left:0,
+                        bottom:0,
+                        width: `${seatSize}px`,
+                        height: `${seatSize + 5}px`,
+                        borderRadius:"50%",
+                        backgroundImage: `url('/cover.png')`,
+                        backgroundSize:"contain",
+                        backgroundPosition:"center",
+                        zIndex:1,
+                      }}
+                      />
+                       <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+        zIndex: 2, // Higher z-index to bring it to the front
+        
+      }}
+    >
+                      {memoImage()}
+    </div>
                     </div>
                   </foreignObject>
 

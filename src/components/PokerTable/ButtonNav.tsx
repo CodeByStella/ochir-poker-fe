@@ -264,7 +264,7 @@ export default function ButtonNav({
                 disabled={raiseAmount <= table.currentBet}
                 className="w-full px-4 py-2 text-white border-2 border-gray-500 rounded-lg disabled:opacity-50 text-sm md:text-base"
               >
-                <span className="font-semibold">Шаах</span>
+                <span className="font-semibold">Raise</span>
               </motion.button>
             </div>
           </motion.div>
