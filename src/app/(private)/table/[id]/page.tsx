@@ -8,7 +8,6 @@ import { message as toastMessage } from "@/utils/toast";
 import background from "../../../../../public/asset/back.jpg";
 import cardBack from "../../../../../public/card.png";
 import { PokerTableSVG } from "./PokerTableSVG";
-import Card from "../../../../components/card/Card";
 import cardStyles from "../../../../components/card/Card.module.css";
 import LoginModal from "@/components/modal/Login";
 import { siteApi } from "@/config/site";
@@ -17,7 +16,6 @@ import ChatComponent from "@/components/PokerTable/ChatSection";
 import Waitinglist from "@/components/PokerTable/WaitingList";
 import SeatInstruction from "@/components/PokerTable/SeatInstruction";
 import SeatModal from "@/components/PokerTable/SeatModal";
-import TableCard from "@/components/PokerTable/TableCard";
 import { chipImages } from "@/constants";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
@@ -58,8 +56,6 @@ interface WinnerData {
   handDescription?: string;
 }
 
-
-
 export default function PokerTable() {
   const { id } = useParams();
   const tableId = id as string;
@@ -88,18 +84,18 @@ export default function PokerTable() {
     screenWidth / (isMobile ? 700 : 1000),
     screenHeight / (isMobile ? 1000 : 600),
   );
-  const {token} = useSelector((state: RootState) => state.auth);
+  const { token } = useSelector((state: RootState) => state.auth);
 
   const { data: currentUser, mutate, isLoading } = useSWR<IUser>(`swr.auth.me.${token}`, async () => {
     const res = await authApi.me();
     return res;
   });
   const isAdmin = currentUser?.role === "admin";
-  
+
   const shuffleSound = useMemo(() => new Audio("/mp3/shuffle.mp3"), []);
   const foldSound = new Audio("/mp3/fold.mp3");
   const potSound = useMemo(() => new Audio("/mp3/pot.mp3"), []);
-  const chipSound = useMemo(() => new Audio("/mp3/chip.mp3"),[]);
+  const chipSound = useMemo(() => new Audio("/mp3/chip.mp3"), []);
   const flipSound = useMemo(() => new Audio("/mp3/flip.mp3"), []);
   const checkSound = new Audio("/mp3/check.mp3");
   const callSound = new Audio("/mp3/call.mp3");
@@ -107,8 +103,8 @@ export default function PokerTable() {
 
   const getChipStack = (amount: number) => {
     if (amount === 0) {
-      return [chipImages[0]]
-    };
+      return [chipImages[0]];
+    }
     const stack: { src: string; value: number }[] = [];
     let remaining = amount;
     const sortedChips = [...chipImages].sort((a, b) => b.value - a.value);
@@ -123,70 +119,73 @@ export default function PokerTable() {
     return stack.slice(0, 3);
   };
 
-  const animateDealCards = useCallback((
-    players: {
-      user: string;
-      seat: number;
-      cards: [string, string];
-      chips: number;
-      username: string;
-    }[],
-    maxPlayers: number,
-  ) => {
-    const container = animationContainerRef.current;
-    if (!container || !players?.length || !maxPlayers) {
-      setIsDealing(false);
-      return;
-    }
+  const animateDealCards = useCallback(
+    (
+      players: {
+        user: string;
+        seat: number;
+        cards: [string, string];
+        chips: number;
+        username: string;
+      }[],
+      maxPlayers: number,
+    ) => {
+      const container = animationContainerRef.current;
+      if (!container || !players?.length || !maxPlayers) {
+        setIsDealing(false);
+        return;
+      }
 
-    container.innerHTML = "";
-    const dealStep = 200;
-    let totalTime = 0;
-
-    players.forEach((player, playerIndex) => {
-      const seatElement = document.querySelector(`.seat-${player.seat}`);
-      const cardContainer = seatElement?.querySelector(".player-cards") || seatElement;
-      if (!seatElement || !cardContainer) return;
-
-      const rect = cardContainer.getBoundingClientRect();
-      const containerRect = container.getBoundingClientRect();
-      const targetX = rect.left - containerRect.left;
-      const targetY = rect.top - containerRect.top;
-
-      player.cards.slice(0, 2).forEach((cardValue, cardIdx) => {
-        const card = document.createElement("div");
-        card.className = `${cardStyles.card} ${cardStyles.deal}`;
-        card.style.left = "50%";
-        card.style.top = "50%";
-        card.style.transform = "translate(-50%, -50%)";
-        const cardOffset = cardIdx * (isMobile ? 20 : 30);
-        card.style.setProperty("--deal-x", `${targetX + cardOffset}px`);
-        card.style.setProperty("--deal-y", `${targetY}px`);
-        card.style.animationDelay = `${totalTime}ms`;
-        card.style.zIndex = "100";
-        card.innerHTML = `<img src="${cardBack.src}" alt="Card Back" style="width: ${isMobile ? 40 : 60}px; height: ${isMobile ? 56 : 84}px;" />`;
-        container.appendChild(card);
-        totalTime += dealStep;
-
-        setTimeout(() => {
-          flipSound.play().catch((err) => console.error("Error playing flip sound:", err));
-        }, totalTime - dealStep);
-      });
-    });
-
-    const totalDuration = players.length * 2 * dealStep + 500;
-    setTimeout(() => {
       container.innerHTML = "";
-      setIsDealing(false);
-    }, totalDuration);
-  }, [flipSound, isMobile]);
+      const dealStep = 200;
+      let totalTime = 0;
+
+      players.forEach((player, playerIndex) => {
+        const seatElement = document.querySelector(`.seat-${player.seat}`);
+        const cardContainer = seatElement?.querySelector(".player-cards") || seatElement;
+        if (!seatElement || !cardContainer) return;
+
+        const rect = cardContainer.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        const targetX = rect.left - containerRect.left;
+        const targetY = rect.top - containerRect.top;
+
+        player.cards.slice(0, 2).forEach((cardValue, cardIdx) => {
+          const card = document.createElement("div");
+          card.className = `${cardStyles.card} ${cardStyles.deal}`;
+          card.style.left = "50%";
+          card.style.top = "50%";
+          card.style.transform = "translate(-50%, -50%)";
+          const cardOffset = cardIdx * (isMobile ? 20 : 30);
+          card.style.setProperty("--deal-x", `${targetX + cardOffset}px`);
+          card.style.setProperty("--deal-y", `${targetY}px`);
+          card.style.animationDelay = `${totalTime}ms`;
+          card.style.zIndex = "100";
+          card.innerHTML = `<img src="${cardBack.src}" alt="Card Back" style="width: ${isMobile ? 40 : 60}px; height: ${isMobile ? 56 : 84}px;" />`;
+          container.appendChild(card);
+          totalTime += dealStep;
+
+          setTimeout(() => {
+            flipSound.play().catch((err) => console.error("Error playing flip sound:", err));
+          }, totalTime - dealStep);
+        });
+      });
+
+      const totalDuration = players.length * 2 * dealStep + 500;
+      setTimeout(() => {
+        container.innerHTML = "";
+        setIsDealing(false);
+      }, totalDuration);
+    },
+    [flipSound, isMobile]
+  );
 
   const leaveSeat = useCallback(() => {
-    if(socket && tableId && currentUser?._id){
-      socket.emit("leaveSeat", {tableId, userId: currentUser._id});
+    if (socket && tableId && currentUser?._id) {
+      socket.emit("leaveSeat", { tableId, userId: currentUser._id });
       console.log(`Emitted leaveSeat for user ${currentUser._id} on table ${tableId}`);
     }
-  }, [currentUser?._id, tableId])
+  }, [currentUser?._id, tableId]);
 
   useEffect(() => {
     const updateScreenSize = () => {
@@ -194,7 +193,7 @@ export default function PokerTable() {
       setScreenHeight(window.innerHeight);
     };
     updateScreenSize();
-    const currentTurnTimer = turnTimerRef.current
+    const currentTurnTimer = turnTimerRef.current;
     window.addEventListener("resize", updateScreenSize);
 
     const handleTableUpdate = (data: ITable) => {
@@ -208,22 +207,30 @@ export default function PokerTable() {
       ) {
         setShowCommunityCards(true);
       }
+      // Clear the last action for the current player when their turn starts
+      if (data.status === "playing" && data.players[data.currentPlayer]?._id) {
+        setLastActions((prev) => {
+          const newActions = new Map(prev);
+          newActions.delete(data.players[data.currentPlayer]._id.toString());
+          return newActions;
+        });
+      }
     };
 
     const updateAdminPreviewCards = (tableData: ITable) => {
       if (
         isAdmin &&
         tableData.status === "playing" &&
-        tableData.deck.length >= 6
+        tableData.deck.length >= 5
       ) {
         const deck = tableData.deck;
-        const lastSix = deck.slice(-6);
+        const lastSix = deck.slice(-5);
         const previewCards = [
           lastSix[0],
           lastSix[1],
+          lastSix[2],
           lastSix[3],
           lastSix[4],
-          lastSix[5],
         ];
         setAdminPreviewCards(previewCards);
       } else {
@@ -259,6 +266,7 @@ export default function PokerTable() {
       setTable(data);
       updateAdminPreviewCards(data);
       setShowCommunityCards(false);
+      setLastActions(new Map()); // Reset last actions when a new game starts
     });
 
     socket.on("playerAction", (actionData: PlayerAction) => {
@@ -270,13 +278,6 @@ export default function PokerTable() {
         });
         return newActions;
       });
-      setTimeout(() => {
-        setLastActions((prev) => {
-          const newActions = new Map(prev);
-          newActions.delete(actionData.playerId);
-          return newActions;
-        });
-      }, 3000);
     });
 
     socket.on("dealCards", (data: DealCardsData) => {
@@ -305,29 +306,37 @@ export default function PokerTable() {
       );
     });
 
-    socket.on(
-      "handResult",
-      (data: {
-        winners: WinnerData[];
-        showdownPlayers: { playerId: string; cards: string[] }[];
-      }) => {
-        setWinners(data.winners);
-        setShowdownPlayers(data.showdownPlayers);
-        potSound.play().catch((err) => console.error("Error playing pot sound:", err));
-        setTimeout(() => {
-          setWinners([]);
-          setShowdownPlayers([]);
-        }, WINNER_DISPLAY_DURATION);
-      },
-    );
+    socket.on("handResult", (data: {
+      winners: WinnerData[];
+      showdownPlayers: { playerId: string; cards: string[] }[];
+    }) => {
+      setWinners(data.winners);
+      setShowdownPlayers(data.showdownPlayers);
+      potSound.play().catch((err) => console.error("Error playing pot sound:", err));
+      setShowCommunityCards(true);
+      setTimeout(() => {
+        setWinners([]);
+        setShowdownPlayers([]);
+        setShowCommunityCards(false);
+        setLastActions(new Map()); // Clear last actions after hand result
+      }, WINNER_DISPLAY_DURATION);
+    });
 
     socket.on("roundUpdate", (data: ITable) => {
       if (data._id !== tableId) return;
-      if (data.round !== "preflop" && data.communityCards.length > 0) {
+      if (data.round !== "preflop" || data.communityCards.length > 0) {
         flipSound.play().catch((err) => console.error("Error playing flip sound:", err));
         setShowCommunityCards(true);
       }
       setTable(data);
+      // Clear the last action for the current player when their turn starts
+      if (data.status === "playing" && data.players[data.currentPlayer]?._id) {
+        setLastActions((prev) => {
+          const newActions = new Map(prev);
+          newActions.delete(data.players[data.currentPlayer]._id.toString());
+          return newActions;
+        });
+      }
     });
 
     socket.on("chipsAdded", ({ tableId: updatedTableId, userId, amount }) => {
@@ -371,22 +380,21 @@ export default function PokerTable() {
         clearInterval(currentTurnTimer);
       }
     };
-  }, [tableId, currentUser?._id, isAdmin, shuffleSound, animateDealCards, table?.maxPlayers, potSound, flipSound, chipSound]); 
+  }, [tableId, currentUser?._id, isAdmin, shuffleSound, animateDealCards, table?.maxPlayers, potSound, flipSound, chipSound]);
 
   useEffect(() => {
-    const handleBeforeUnload = (event:any) => {
+    const handleBeforeUnload = (event: any) => {
       leaveSeat();
       event.preventDefault();
       event.returnValue = "Are you sure you want to leave the table?";
-    }
+    };
     window.addEventListener("beforeunload", handleBeforeUnload);
 
-    // Cleanup on component unmount (e.g., navigating to another page)
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      leaveSeat(); // Ensure leaveSeat is called when navigating away
+      leaveSeat();
     };
-  },[leaveSeat, currentUser?._id])
+  }, [leaveSeat, currentUser?._id]);
 
   const joinSeat = (seat: number, chips: number) => {
     if (!currentUser?._id) {
@@ -573,7 +581,7 @@ export default function PokerTable() {
         }
         .table-wrapper {
           position: absolute;
-          top: 50%;
+          top: 45%;
           left: 50%;
           transform: translate(-50%, -50%);
           width: ${isMobile ? `${tableWidth}px` : tableWidth};
@@ -624,6 +632,11 @@ export default function PokerTable() {
             currentPlayerId={currentPlayer?._id.toString()}
             isAdmin={isAdmin}
             showdownPlayers={showdownPlayers}
+            showCommunityCards={showCommunityCards}
+            table={table}
+            getVisibleCardCount={getVisibleCardCount}
+            isMobile={isMobile}
+            adminPreviewCards={adminPreviewCards}
           />
           <div
             ref={animationContainerRef}
@@ -635,38 +648,6 @@ export default function PokerTable() {
               zIndex: 50,
             }}
           />
-          {showCommunityCards && !isDealing && (
-          <TableCard
-          getVisibleCardCount={getVisibleCardCount}
-          isMobile={isMobile}
-          table={table}
-          />
-          )}
-          {isAdmin && (
-            <div
-              className="absolute flex gap-1"
-              style={{
-                left: "50%",
-                top: isMobile ? "55%" : "60%",
-                transform: "translate(-50%, 0)",
-                zIndex: 15,
-              }}
-            >
-              {adminPreviewCards.map((cardValue, index) => (
-                <Card
-                  key={`admin-preview-${index}`}
-                  value={cardValue}
-                  isOpen={true}
-                  style={{
-                    position: "relative",
-                    width: isMobile ? "25px" : "35px",
-                    height: isMobile ? "35px" : "50px",
-                    opacity: 0.8,
-                  }}
-                />
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
@@ -677,7 +658,6 @@ export default function PokerTable() {
       <ChatComponent socket={socket} tableId={tableId} currentUser={currentUser} />
       <Waitinglist table={table} />
       <SeatInstruction isUserSeated={isUserSeated} isMobile={isMobile} />
-
 
       {isMyTurn && table.status === "playing" && (
         <ButtonNav
@@ -694,13 +674,13 @@ export default function PokerTable() {
 
       {isModalOpen && (
         <SeatModal
-        chipAmount={chipAmount}
-        closeModal={closeModal}
-        joinSeat={joinSeat}
-        selectedSeat={selectedSeat}
-        setChipAmount={setChipAmount}
-        table={table}
-        currentUser={currentUser}
+          chipAmount={chipAmount}
+          closeModal={closeModal}
+          joinSeat={joinSeat}
+          selectedSeat={selectedSeat}
+          setChipAmount={setChipAmount}
+          table={table}
+          currentUser={currentUser}
         />
       )}
     </div>

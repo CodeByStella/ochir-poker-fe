@@ -16,6 +16,7 @@ interface SelectedRoomProps {
   joinedTable: (tableId: string) => void;
   isDealing: boolean;
   winners: any[];
+  adminPreviewCards?: string[];
 }
 
 export default function SelectedRoom({
@@ -81,6 +82,7 @@ export default function SelectedRoom({
               winners={winners}
               onSeatClick={(seatId: any) => console.log(`Seat clicked: ${seatId}`)}
               isUserSeated={false}
+              table={tableData}
             />
           </div>
         </div>
