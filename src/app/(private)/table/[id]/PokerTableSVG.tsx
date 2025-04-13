@@ -3,8 +3,6 @@ import Image from "next/image";
 import { AvatarLogo } from "@/components/icons/avatar";
 import { IPlayer } from "@/models/player";
 import { ITable } from "@/models/table";
-import Table from "../../../../../public/asset/table.svg";
-import { TableImage } from "@/components/icons/table";
 
 interface PokerTableSVGProps {
   scale: number;
@@ -33,9 +31,9 @@ interface PlayerAction {
   playerId: string;
   action: string;
   amount?: number;
-
   timestamp: Date;
 }
+
 const getWinningCards = (
   handDescription: string | undefined,
   playerCards: string[],
@@ -45,8 +43,8 @@ const getWinningCards = (
     return [];
 
   const allCards = [...playerCards, ...communityCards];
-  const ranks = allCards.map((card) => card.slice(0, -1)); // e.g., "A", "K", "2"
-  const suits = allCards.map((card) => card.slice(-1)); // e.g., "s", "h"
+  const ranks = allCards.map((card) => card.slice(0, -1));
+  const suits = allCards.map((card) => card.slice(-1));
   const rankValues = ranks.map((rank) => {
     if (rank === "A") return 14;
     if (rank === "K") return 13;
@@ -56,7 +54,6 @@ const getWinningCards = (
     return parseInt(rank);
   });
 
-  // Rank counts for pairs, three of a kind, etc.
   const rankCounts = ranks.reduce(
     (acc, rank) => {
       acc[rank] = (acc[rank] || 0) + 1;
@@ -65,7 +62,6 @@ const getWinningCards = (
     {} as Record<string, number>,
   );
 
-  // Suit counts for flush
   const suitCounts = suits.reduce(
     (acc, suit) => {
       acc[suit] = (acc[suit] || 0) + 1;
@@ -74,7 +70,6 @@ const getWinningCards = (
     {} as Record<string, number>,
   );
 
-  // Helper to sort cards by rank value (high to low)
   const sortByRank = (cards: string[]) =>
     cards.sort((a, b) => {
       const aVal = rankValues[ranks.indexOf(a.slice(0, -1))];
@@ -82,13 +77,11 @@ const getWinningCards = (
       return bVal - aVal;
     });
 
-  // Helper to get the highest cards as kickers
   const getKickers = (usedCards: string[], count: number): string[] => {
     const remaining = allCards.filter((card) => !usedCards.includes(card));
     return sortByRank(remaining).slice(0, count);
   };
 
-  // Helper to check for straight
   const findStraight = (values: number[]): number[] | null => {
     const uniqueValues = Array.from(new Set(values)).sort((a, b) => b - a);
     if (uniqueValues.length < 5) return null;
@@ -97,7 +90,6 @@ const getWinningCards = (
         return uniqueValues.slice(i, i + 5);
       }
     }
-    // Check Ace-low straight (A-5-4-3-2)
     if (
       uniqueValues.includes(14) &&
       uniqueValues.slice(-4).join("") === "5432"
@@ -151,7 +143,7 @@ const getWinningCards = (
         (rank) => rankCounts[rank] === 4,
       )!;
       winningCards = allCards.filter((card) => card.startsWith(fourRank));
-      winningCards = winningCards.concat(getKickers(winningCards, 1)); // Add 1 kicker
+      winningCards = winningCards.concat(getKickers(winningCards, 1));
       break;
     }
     case "Full House": {
@@ -196,7 +188,7 @@ const getWinningCards = (
         (rank) => rankCounts[rank] === 3,
       )!;
       winningCards = allCards.filter((card) => card.startsWith(threeRank));
-      winningCards = winningCards.concat(getKickers(winningCards, 2)); // Add 2 kickers
+      winningCards = winningCards.concat(getKickers(winningCards, 2));
       break;
     }
     case "Two Pair": {
@@ -209,7 +201,7 @@ const getWinningCards = (
       const pairs = pairRanks.flatMap((rank) =>
         allCards.filter((card) => card.startsWith(rank)).slice(0, 2),
       );
-      winningCards = pairs.concat(getKickers(pairs, 1)); // Add 1 kicker
+      winningCards = pairs.concat(getKickers(pairs, 1));
       break;
     }
     case "One Pair": {
@@ -217,18 +209,17 @@ const getWinningCards = (
         (rank) => rankCounts[rank] === 2,
       )!;
       winningCards = allCards.filter((card) => card.startsWith(pairRank));
-      winningCards = winningCards.concat(getKickers(winningCards, 3)); // Add 3 kickers
+      winningCards = winningCards.concat(getKickers(winningCards, 3));
       break;
     }
     case "High Card": {
-      winningCards = sortByRank(allCards).slice(0, 5); // Top 5 cards
+      winningCards = sortByRank(allCards).slice(0, 5);
       break;
     }
     default:
       break;
   }
 
-  // Ensure exactly 5 cards are returned
   return winningCards.length === 5 ? winningCards : [];
 };
 
@@ -334,10 +325,10 @@ export const PokerTableSVG = memo(
     };
 
     const getSeatPosition = (index: number, totalSeats: number) => {
-      const centerX = isMobile ? 520 : 512;
-      const centerY = isMobile ? 636 : 267;
+      const centerX = isMobile ? 430 : 512;
+      const centerY = isMobile ? 630 : 267;
       const radiusX = isMobile ? 350 : 490;
-      const radiusY = isMobile ? 570 : 250;
+      const radiusY = isMobile ? 550 : 250;
 
       const angleOffset = Math.PI / 2;
       const angleStep = (2 * Math.PI) / totalSeats;
@@ -370,7 +361,7 @@ export const PokerTableSVG = memo(
     });
 
     const seatSize = isMobile ? 100 : 70;
-    const fontSizeMultiplier = isMobile ? 1.5 : 1;
+    const fontSizeMultiplier = isMobile ? 2 : 1;
 
     const getCardImagePath = (card: string) => {
       const suit = card.slice(-1);
@@ -406,10 +397,15 @@ export const PokerTableSVG = memo(
       [seatSize],
     );
 
+    const isSeatOnLeft = (seatIndex: number, totalSeats: number) => {
+      const centerSeat = totalSeats / 2;
+      return seatIndex >= centerSeat;
+    };
+
     const DesktopSVG = () => {
       const chipStack = getChipStack(pot);
-      const cardWidth = 45;
-      const cardHeight = 60;
+      const cardWidth = 50;
+      const cardHeight = 65;
       const totalCards = table
         ? getVisibleCardCount
           ? getVisibleCardCount(table.round, table.communityCards.length)
@@ -419,15 +415,15 @@ export const PokerTableSVG = memo(
       const centerX = 512;
       const centerY = 267;
       const communityCardsX = centerX - totalWidth / 2;
-      const communityCardsY = centerY + 50;
+      const communityCardsY = centerY - 50;
 
       const adminCardWidth = 35;
       const adminCardHeight = 50;
       const adminTotalWidth =
         adminPreviewCards.length * adminCardWidth +
         (adminPreviewCards.length - 1) * 5;
-      const adminCardsX = centerX - adminTotalWidth / 2;
-      const adminCardsY = centerY + 120;
+      const adminCardsX = centerX - adminTotalWidth / 2 - 50;
+      const adminCardsY = centerY - 50;
 
       const turnCircleRadius = seatSize / 2 + 5;
       const turnCircleCircumference = 2 * Math.PI * turnCircleRadius;
@@ -444,13 +440,13 @@ export const PokerTableSVG = memo(
             {`
             .winner-highlight { animation: pulse 1.5s infinite ease-in-out; }
             .winner-text { animation: fadeInUp 0.5s ease-out; }
-              .turn-circle { 
-                stroke-dasharray: ${turnCircleCircumference}; 
-                stroke-dashoffset: ${(1 - timeLeft / 20) * turnCircleCircumference}; 
-                transform: rotate(-90deg);
-                transform-origin: center;
-                transition: stroke-dashoffset 1s linear;
-              }
+            .turn-circle { 
+              stroke-dasharray: ${turnCircleCircumference}; 
+              stroke-dashoffset: ${(1 - timeLeft / 20) * turnCircleCircumference}; 
+              transform: rotate(-90deg);
+              transform-origin: center;
+              transition: stroke-dashoffset 1s linear;
+            }
             .card-highlight { filter: drop-shadow(0 0 5px #facc15); }
             @keyframes pulse {
               0% { stroke-opacity: 0.3; r: ${seatSize / 2}; }
@@ -465,25 +461,56 @@ export const PokerTableSVG = memo(
               from { transform: rotate(0deg); }
               to { transform: rotate(360deg); }
             }
-              @keyframes dashCountdown {
-            from { stroke-dashoffset: 0; }
-            to { stroke-dashoffset: -100; }
-          }
+            @keyframes dashCountdown {
+              from { stroke-dashoffset: 0; }
+              to { stroke-dashoffset: -100; }
+            }
           `}
           </style>
 
-          {/* Table Background */}
-          <image
-            x="-130"
-            y="-100"
-            width={1300}
-            height={750}
-            href="/asset/desktops.png"
-            preserveAspectRatio="xMidYMid meet"
+          <path
+            d="M276.6,510h474.2C886.4,510,1001.2,405.5,1001.2,267.5S890,25,768.6,25c-64.2,0-97.9,5.2-142.5,10.4 c-40.1,4.6-62.4,8.9-112.4,9.4c-49.9-0.5-87.9-4.9-128-9.4c-44.6-5.1-62.5-10.4-126.9-10.4C137.5,25,26.2,129.5,26.2,267.5S138.6,510,276.6,510 z"
+            fill="#b3a18a"
+          />
+          <radialGradient
+            id="desktop-a"
+            cx="416.897"
+            cy="196.979"
+            r="494.325"
+            gradientTransform="matrix(1.2519 .01794 -.01025 .7147 -6.135 119.241)"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0" stopOpacity="0" />
+            <stop offset=".535" stopOpacity=".2" />
+            <stop offset="1" stopOpacity=".6" />
+          </radialGradient>
+          <path
+            d="M276.6,510h474.2C886.4,510,1001.2,405.5,1001.2,267.5S890,25,768.6,25c-64.2,0-97.9,5.2-142.5,10.4 c-40.1,4.6-62.4,8.9-112.4,9.4c-49.9-0.5-87.9-4.9-128-9.4c-44.6-5.1-62.5-10.4-126.9-10.4C137.5,25,26.2,129.5,26.2,267.5S138.6,510,276.6,510 z"
+            fill="url(#desktop-a)"
+          />
+          <radialGradient
+            id="desktop-b"
+            cx="416.897"
+            cy="196.979"
+            r="537.771"
+            gradientTransform="matrix(1.2518 .01997 -.01141 .7147 -5.894 118.396)"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0" stopOpacity="0" />
+            <stop offset=".535" stopOpacity=".2" />
+            <stop offset="1" stopOpacity=".6" />
+          </radialGradient>
+          <path
+            d="M276.6,486.2C149.5,486.2,50,390.1,50,267.5c0-59.2,22.8-114.8,63.9-156.2c39.4-39.8,92.2-62.5,145-62.5 c46.9,0,67.9,2.9,94.5,6.4c9.1,1.2,18.5,2.5,29.8,3.8c40.8,4.6,79.2,9,130.4,9.6h0.5c40.5-0.4,64-3.4,91.2-6.8c7.4-0.9,15-1.9,23.5-2.9 c6.4-0.8,12.6-1.5,18.6-2.1c36.2-4.2,67.5-8,121.1-8c52.8,0,105.6,22.8,145,62.5c41.2,41.6,63.9,97.1,63.9,156.2c0,122.6-99.5,218.8-226.6,218.8 H276.6z"
+            fill="url(#desktop-b)"
+          />
+          <path
+            d="M917.1,107.8C876.9,67,822.8,43.8,768.6,43.8c-54, things:0-85.4,3.8-121.8,8c-6.1,0.7-12.2,1.5-18.6,2.1 c-8.5,1-16.1,1.9-23.6,2.9c-27,3.4-50.4,6.2-90.6,6.8h-0.4c-50.9-0.5-89.2-4.9-129.9-9.5c-11.2-1.2-20.6-2.5-29.6-3.8 c-26.8-3.6-47.9-6.5-95.1-6.5c-54.1,0-108.2,23.2-148.5,64C68.2,150.2,45,207,45,267.5c0,125.5,101.8,223.8,231.6,223.8h474.2 C880.8,491.2,982.5,392.9,982.5,267.5C982.5,207,959.2,150.2,917.1,107.8z M750.9,486.2H276.6C149.5,486.2,50,390.1,50,267.5 c0-59.2,22.8-114.8,63.9-156.2c39.4-39.8,92.2-62.5,145-62.5c46.9,0,67.9,2.9,94.5,6.4c9.1,1.2,18.5,2.5,29.8,3.8 c40.8,4.6,79.2,9,130.4,9.6h0.5c40.5-0.4,64-3.4,91.2-6.8c7.4-0.9,15-1.9,23.5-2.9c6.4-0.8,12.6-1.5,18.6-2.1 c36.2-4.2,67.5-8,121.1-8c52.8,0,105.6,22.8,145,62.5c41.2,41.6,63.9,97.1,63.9,156.2C977.5,390.1,878,486.2,750.9,486.2z"
+            opacity=".1"
+            fill="#fff"
           />
 
-          {/* Chip Stack */}
-          <foreignObject x="462" y="200" width="100" height="100">
+          <foreignObject x="462" y="350" width="100" height="100">
             <div
               style={{
                 display: "flex",
@@ -506,20 +533,10 @@ export const PokerTableSVG = memo(
                   }}
                 />
               ))}
+              <div> Пот: {pot.toFixed(2)}</div>
             </div>
           </foreignObject>
-          <text
-            x="512"
-            y="300"
-            textAnchor="middle"
-            fill="#fff"
-            fontSize="16"
-            fontFamily="bold"
-          >
-            Пот: {pot.toFixed(2)}
-          </text>
 
-          {/* Community Cards with Highlight */}
           {showCommunityCards && !isDealing && table.status === "playing" && (
             <g>
               {table.communityCards.slice(0, totalCards).map((card, index) => {
@@ -537,10 +554,10 @@ export const PokerTableSVG = memo(
                 return (
                   <g key={`community-${index}`}>
                     <image
-                      x={communityCardsX + index * (cardWidth + 5)}
+                      x={communityCardsX + index * (cardWidth + 10)}
                       y={communityCardsY}
-                      width={cardWidth}
-                      height={cardHeight}
+                      width={cardWidth * 1.5}
+                      height={cardHeight * 1.5}
                       href={getCardImagePath(card)}
                       preserveAspectRatio="xMidYMid meet"
                       className={
@@ -558,7 +575,6 @@ export const PokerTableSVG = memo(
             </g>
           )}
 
-          {/* Admin Preview Cards */}
           {isAdmin &&
             adminPreviewCards.length > 0 &&
             table.round !== "showdown" &&
@@ -567,10 +583,10 @@ export const PokerTableSVG = memo(
                 {adminPreviewCards.map((card, index) => (
                   <image
                     key={`admin-preview-${index}`}
-                    x={adminCardsX + index * (adminCardWidth + 5)}
+                    x={adminCardsX + index * (adminCardWidth + 20)}
                     y={adminCardsY}
-                    width={adminCardWidth}
-                    height={adminCardHeight}
+                    width={adminCardWidth * 2}
+                    height={adminCardHeight * 2}
                     href={getCardImagePath(card)}
                     preserveAspectRatio="xMidYMid meet"
                     opacity={0.8}
@@ -579,7 +595,6 @@ export const PokerTableSVG = memo(
               </g>
             )}
 
-          {/* Player Seats */}
           {displayPositions.map((seat) => {
             const { x, y } = getSeatPosition(seat.seatIndex, cappedMaxPlayers);
             const isWinner =
@@ -599,6 +614,13 @@ export const PokerTableSVG = memo(
             const inHand =
               seat.occupied && seat.player ? seat.player.inHand : true;
             const isDealer = seat.seatIndex === table?.dealerSeat;
+            const isCurrentUser =
+              seat.occupied && seat.player?.user === currentUserId;
+            const dealerXOffset = isCurrentUser
+              ? isSeatOnLeft(seat.seatIndex, cappedMaxPlayers)
+                ? -(seatSize + 10)
+                : seatSize + 10
+              : seatSize + 10;
 
             return (
               <g
@@ -647,23 +669,13 @@ export const PokerTableSVG = memo(
                     )}
                     {isWinner && winnerData?.handDescription && (
                       <g transform={`translate(0, -${seatSize + 30})`}>
-                        <rect
-                          x={-seatSize}
-                          y={-15}
-                          width={seatSize * 2}
-                          height={30}
-                          rx={5}
-                          fill="#1f2937"
-                          opacity="0.9"
-                        />
                         <text
                           x={0}
-                          y={5}
+                          y={50}
                           textAnchor="middle"
                           fill="#facc15"
                           fontSize={fontSizeMultiplier * 12}
                           fontWeight="bold"
-                          className="winner-text"
                         >
                           {winnerData.handDescription} (+
                           {formatBetAmount(winnerData.chipsWon)})
@@ -728,16 +740,6 @@ export const PokerTableSVG = memo(
                         </div>
                       </div>
                     </foreignObject>
-                    {isDealer && (
-                      <image
-                        x={seatSize - 20} // Position to the right of the seat
-                        y={-20} // Position above the seat
-                        width={20}
-                        height={20}
-                        href="/poker/dealer.svg"
-                        preserveAspectRatio="xMidYMid meet"
-                      />
-                    )}
                     {lastAction &&
                       (showCommunityCards || winners.length > 0) && (
                         <g transform={`translate(0, ${seatSize})`}>
@@ -791,7 +793,7 @@ export const PokerTableSVG = memo(
                         </g>
                       )}
                     <foreignObject
-                      x={-seatSize + 40}
+                      x={-seatSize + 35}
                       y={seatSize + 20}
                       width={seatSize * 2}
                       height={50}
@@ -826,51 +828,15 @@ export const PokerTableSVG = memo(
                         </span>
                       </div>
                     </foreignObject>
-                    {seat.player.currentBet > 0 && (
-                      <foreignObject
-                        x={-seatSize - 10}
-                        y={seatSize - 8}
-                        width={seatSize}
-                        height={80}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                          }}
-                        >
-                          {getChipStack(seat.player.currentBet).map(
-                            (chip, chipIndex) => (
-                              <Image
-                                key={chipIndex}
-                                src={chip.src}
-                                alt={`Chip ${chipIndex}`}
-                                width={25}
-                                height={25}
-                                style={{
-                                  marginTop: chipIndex === 0 ? 0 : -10,
-                                  zIndex:
-                                    getChipStack(seat.player!.currentBet)
-                                      .length - chipIndex,
-                                  opacity: inHand ? 1 : 0.5,
-                                }}
-                              />
-                            ),
-                          )}
-                          <span
-                            style={{
-                              color: "#fff",
-                              fontWeight: "bold",
-                              marginTop: "4px",
-                              fontSize: `${fontSizeMultiplier * 12}px`,
-                              opacity: inHand ? 1 : 0.5,
-                            }}
-                          >
-                            {formatBetAmount(seat.player.currentBet)}
-                          </span>
-                        </div>
-                      </foreignObject>
+                    {isDealer && (
+                      <image
+                        x={dealerXOffset}
+                        y={seatSize + 50}
+                        width={20}
+                        height={20}
+                        href="/poker/dealer.svg"
+                        preserveAspectRatio="xMidYMid meet"
+                      />
                     )}
                   </>
                 ) : (
@@ -908,7 +874,6 @@ export const PokerTableSVG = memo(
             );
           })}
 
-          {/* Player Cards with Highlight */}
           {displayPositions.map((seat) => {
             const { x, y } = getSeatPosition(seat.seatIndex, cappedMaxPlayers);
             const showdownData =
@@ -953,10 +918,10 @@ export const PokerTableSVG = memo(
               return cardsToShow.map((card, idx) => (
                 <g key={`${seat.seatIndex}-card-${idx}`}>
                   <image
-                    x={cardX + idx * 25}
+                    x={cardX + idx * 30}
                     y={cardY}
-                    width={40}
-                    height={56}
+                    width={50}
+                    height={66}
                     href={isCardOpen ? getCardImagePath(card) : "/card.png"}
                     preserveAspectRatio="xMidYMid meet"
                     className={
@@ -986,7 +951,7 @@ export const PokerTableSVG = memo(
       const totalWidth = totalCards * cardWidth + (totalCards - 1) * 10;
       const centerX = 500;
       const centerY = 636;
-      const communityCardsX = centerX - totalWidth / 2;
+      const communityCardsX = centerX - totalWidth / 2 - 50;
       const communityCardsY = centerY - cardHeight / 2 - 50;
 
       const adminCardWidth = 40;
@@ -994,8 +959,8 @@ export const PokerTableSVG = memo(
       const adminTotalWidth =
         adminPreviewCards.length * adminCardWidth +
         (adminPreviewCards.length - 1) * 10;
-      const adminCardsX = centerX - adminTotalWidth / 2;
-      const adminCardsY = centerY + cardHeight / 2 + 10;
+      const adminCardsX = centerX - adminTotalWidth / 2 - 50;
+      const adminCardsY = centerY - 50;
 
       const turnCircleRadius = seatSize / 2 + 5;
       const turnCircleCircumference = 2 * Math.PI * turnCircleRadius;
@@ -1011,9 +976,9 @@ export const PokerTableSVG = memo(
           }}
         >
           <svg
-            width={840 * scale}
+            width={800 * scale}
             height={1600 * scale}
-            viewBox="60 -130 900 1700"
+            viewBox="20 -130 800 1600"
             className="max-w-full max-h-full"
           >
             <style>
@@ -1048,25 +1013,56 @@ export const PokerTableSVG = memo(
             `}
             </style>
 
-            {/* Custom Table Background */}
-            {/* <image
-            x="-80"
-            y="-150"
-            width="1000"
-            height="1700"
-            href="/asset/mobile.png"
-            preserveAspectRatio="xMidYMid meet"
-          /> */}
-
-            <TableImage
-              width={840 * scale}
-              height={1600 * scale}
-              x={(800 - 840 * scale) / 2 - 100} // Account for viewBox x offset
-              y={(1700 - 1600 * scale) / 2 - 130} // Account for viewBox y offset
-              preserveAspectRatio="xMidYMid meet"
-            />
-            {/* Chip Stack */}
-            <foreignObject x="433" y="300" width="150" height="150">
+            <path
+            d="M420,1218c-215.4,0-384-147.3-384-328.35l0-1.05l35.4-609.9l0-0.9c0.45-66.6,32.55-119.7,103.65-172.5 C240.9,56.7,327.75,30,420,30c92.25,0,179.1,26.7,244.8,75.3c71.25,52.65,103.2,105.9,103.8,172.5l0,0.9L804,888.9l0,0.6 C804,1070.55,635.4,1218,420,1218z"
+            fillRule="evenodd"
+            clipRule="evenodd"
+            fill="#b3a18a"
+          />
+          <radialGradient
+            id="mobile-a"
+            cx="415.9905"
+            cy="632.979"
+            r="504.5985"
+            gradientTransform="matrix(1.0031 0 0 1.6437 2.7045 -416.4525)"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0" stopOpacity="0" />
+            <stop offset=".535" stopOpacity=".2" />
+            <stop offset="1" stopOpacity=".6" />
+          </radialGradient>
+          <path
+            d="M420,1218c-215.4,0-384-147.3-384-328.35l0-1.05l35.4-609.9l0-0.9c0.45-66.6,32.55-119.7,103.65-172.5 C240.9,56.7,327.75,30,420,30c92.25,0,179.1,26.7,244.8,75.3c71.25,52.65,103.2,105.9,103.8,172.5l0,0.9L804,888.9l0,0.6 C804,1070.55,635.4,1218,420,1218z"
+            fillRule="evenodd"
+            clipRule="evenodd"
+            fill="url(#mobile-a)"
+          />
+          <radialGradient
+            id="mobile-b"
+            cx="415.9905"
+            cy="626.379"
+            r="640.2195"
+            gradientTransform="matrix(1.0031 0 0 1.2379 2.7045 -157.92)"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0" stopOpacity="0" />
+            <stop offset=".535" stopOpacity=".2" />
+            <stop offset="1" stopOpacity=".6" />
+          </radialGradient>
+          <path
+            d="M420,1179c-95.7,0-184.8-31.35-250.95-88.2c-64.35-55.35-99.75-128.85-99.9-207.15L104.55,273l0-1.65 c0.45-56.25,27.45-100.05,90.45-146.7c60-44.4,139.8-68.7,224.85-68.7c85.05,0,164.85,24.45,224.85,68.7c63,46.5,90.15,90.45,90.6,146.7l0,1.95 l35.4,609.9c-0.15,78.3-35.55,151.95-99.9,207.3C604.8,1147.65,515.7,1179,420,1179z"
+            fillRule="evenodd"
+            clipRule="evenodd"
+            fill="url(#mobile-b)"
+          />
+          <path
+            d="M742.05,273l0-1.5c-0.45-58.5-28.35-103.95-93.15-151.95C587.7,74.4,506.4,49.5,420,49.5c-86.55,0-167.85,24.9-228.9,70.05 c-64.8,48-92.7,93.3-93.15,151.8l0,1.65L62.55,883.5c0.15,80.25,36.45,155.55,102.15,212.1c67.35,57.9,157.95,89.85,255.3,89.85 c97.35,0,187.95-31.95,255.3-89.85c65.85-56.7,102.15-132.15,102.15-212.4L742.05,273z M670.95,1090.65C604.8,1147.65,515.7,1179,420,1179 c-95.7,0-184.8-31.35-250.95-88.2c-64.35-55.35-99.75-128.85-99.9-207.15L104.55,273l0-1.65c0.45-56.25,27.45-100.05,90.45-146.7 c60-44.4,139.8-68.7,224.85-68.7c85.05,0,164.85,24.45,224.85,68.7c63,46.5,90.15,90.45,90.6,146.7l0,1.95l35.4,609.9 C770.85,961.65,735.45,1033.65,670.95,1090.65z"
+            opacity=".1"
+            fillRule="evenodd"
+            clipRule="evenodd"
+            fill="#fff"
+          />
+            <foreignObject x="350" y="300" width="150" height="150">
               <div
                 style={{
                   display: "flex",
@@ -1089,94 +1085,81 @@ export const PokerTableSVG = memo(
                     }}
                   />
                 ))}
+                <div className="text-white font-bold text-2xl">
+                  Пот: {pot.toFixed(2)}
+                </div>
               </div>
             </foreignObject>
-            <text
-              x="510"
-              y="495"
-              textAnchor="middle"
-              fill="#fff"
-              fontFamily="bold"
-              fontSize="36"
-            >
-              Пот: {pot.toFixed(2)}
-            </text>
 
-            {/* Community Cards with Highlight */}
             {showCommunityCards && !isDealing && table.status === "playing" && (
               <g>
-                {table.communityCards
-                  .slice(0, totalCards)
-                  .map((card, index) => {
-                    const isWinningCard = winners.some((winner) => {
-                      const showdownData = showdownPlayers.find(
-                        (sp) => sp.playerId === winner.playerId,
-                      );
-                      const winningCards = getWinningCards(
-                        winner.handDescription,
-                        showdownData ? showdownData.cards : [],
-                        table.communityCards,
-                      );
-                      return winningCards.includes(card);
-                    });
-                    return (
-                      <g key={`community-${index}`}>
-                        <image
-                          x={communityCardsX + index * (cardWidth + 10)}
-                          y={communityCardsY}
-                          width={cardWidth + 20}
-                          height={cardHeight + 20}
-                          href={getCardImagePath(card)}
-                          preserveAspectRatio="xMidYMid meet"
-                          className={
-                            isWinningCard && winners.length > 0
-                              ? "card-highlight"
-                              : ""
-                          }
-                          opacity={
-                            winners.length > 0 ? (isWinningCard ? 1 : 0.5) : 1
-                          }
-                        />
-                      </g>
+                {table.communityCards.slice(0, totalCards).map((card, index) => {
+                  const isWinningCard = winners.some((winner) => {
+                    const showdownData = showdownPlayers.find(
+                      (sp) => sp.playerId === winner.playerId,
                     );
-                  })}
+                    const winningCards = getWinningCards(
+                      winner.handDescription,
+                      showdownData ? showdownData.cards : [],
+                      table.communityCards,
+                    );
+                    return winningCards.includes(card);
+                  });
+                  const gap = 40;
+                  return (
+                    <g key={`community-${index}`}>
+                      <image
+                        x={communityCardsX + index * (cardWidth + gap) - 120}
+                        y={communityCardsY + 70}
+                        width={cardWidth + 60}
+                        height={cardHeight + 60}
+                        href={getCardImagePath(card)}
+                        preserveAspectRatio="xMidYMid meet"
+                        className={
+                          isWinningCard && winners.length > 0
+                            ? "card-highlight"
+                            : ""
+                        }
+                        opacity={
+                          winners.length > 0 ? (isWinningCard ? 1 : 0.5) : 1
+                        }
+                      />
+                    </g>
+                  );
+                })}
               </g>
             )}
 
-            {/* Admin Preview Cards */}
             {isAdmin &&
               adminPreviewCards.length > 0 &&
               table.round !== "showdown" &&
               table.round !== "river" && (
                 <g>
-                  {adminPreviewCards.map((card, index) => (
-                    <image
-                      key={`admin-preview-${index}`}
-                      x={adminCardsX + index * (adminCardWidth + 10)}
-                      y={adminCardsY}
-                      width={adminCardWidth * 2}
-                      height={adminCardHeight * 2}
-                      href={getCardImagePath(card)}
-                      preserveAspectRatio="xMidYMid meet"
-                      opacity={0.8}
-                    />
-                  ))}
+                  {adminPreviewCards.map((card, index) => {
+                    const gap = 50;
+                    return (
+                      <image
+                        key={`admin-preview-${index}`}
+                        x={adminCardsX + index * (adminCardWidth + gap) - 150}
+                        y={adminCardsY + 30}
+                        width={adminCardWidth + 80}
+                        height={adminCardHeight + 80}
+                        href={getCardImagePath(card)}
+                        preserveAspectRatio="xMidYMid meet"
+                        opacity={0.8}
+                      />
+                    );
+                  })}
                 </g>
               )}
 
-            {/* Player Seats */}
             {displayPositions.map((seat) => {
-              const { x, y } = getSeatPosition(
-                seat.seatIndex,
-                cappedMaxPlayers,
-              );
+              const { x, y } = getSeatPosition(seat.seatIndex, cappedMaxPlayers);
               const isWinner =
                 seat.occupied &&
                 winners.some((w) => w.playerId === seat.player?._id.toString());
               const winnerData = isWinner
-                ? winners.find(
-                    (w) => w.playerId === seat.player?._id.toString(),
-                  )
+                ? winners.find((w) => w.playerId === seat.player?._id.toString())
                 : null;
               const lastAction =
                 seat.occupied && seat.player
@@ -1189,6 +1172,14 @@ export const PokerTableSVG = memo(
               const inHand =
                 seat.occupied && seat.player ? seat.player.inHand : true;
               const isDealer = seat.seatIndex === table?.dealerSeat;
+              const isCurrentUser =
+                seat.occupied && seat.player?.user === currentUserId;
+              const dealerXOffset = isCurrentUser
+                ? isSeatOnLeft(seat.seatIndex, cappedMaxPlayers)
+                  ? -(seatSize + 10)
+                  : seatSize + 20
+                : seatSize + 10;
+
               return (
                 <g
                   key={`seat-${seat.seatIndex}`}
@@ -1236,23 +1227,13 @@ export const PokerTableSVG = memo(
                       )}
                       {isWinner && winnerData?.handDescription && (
                         <g transform={`translate(0, -${seatSize + 20})`}>
-                          <rect
-                            x={-seatSize}
-                            y={-10}
-                            width={seatSize * 2}
-                            height={20}
-                            rx={5}
-                            fill="#1f2937"
-                            opacity="0.9"
-                          />
                           <text
                             x={0}
-                            y={5}
+                            y={50}
                             textAnchor="middle"
                             fill="#facc15"
                             fontSize={fontSizeMultiplier * 12}
                             fontWeight="bold"
-                            className="winner-text"
                           >
                             {winnerData.handDescription} (+
                             {formatBetAmount(winnerData.chipsWon)})
@@ -1288,40 +1269,12 @@ export const PokerTableSVG = memo(
                           </div>
                         </div>
                       </foreignObject>
-                      {isDealer && (
-                        <image
-                          x={seatSize - 30}
-                          y={-30}
-                          width={30}
-                          height={30}
-                          href="/poker/dealer.svg"
-                          preserveAspectRatio="xMidYMid meet"
-                        />
-                      )}
                       {lastAction &&
                         (showCommunityCards || winners.length > 0) && (
                           <g transform={`translate(0, ${seatSize})`}>
-                            <rect
-                              x={-seatSize + 37}
-                              y={0}
-                              width={seatSize * 2}
-                              height={25}
-                              fill="#1f2937"
-                              rx={5} 
-                              opacity={inHand ? 0.9 : 0.5}
-                            />
-                            <image
-                              x={-seatSize + 37}
-                              y={0}
-                              width={seatSize * 2}
-                              height={25}
-                              href="/poker/lastaction.svg"
-                              preserveAspectRatio="xMidYMid meet"
-                              opacity={inHand ? 0.9 : 0.5}
-                            />
                             <text
-                              x={37} 
-                              y={17} 
+                              x={40}
+                              y={17}
                               textAnchor="middle"
                               fill="#fff"
                               fontSize={fontSizeMultiplier * 12}
@@ -1333,14 +1286,15 @@ export const PokerTableSVG = memo(
                           </g>
                         )}
                       <foreignObject
-                        x={-seatSize + 40}
+                        x={-seatSize + 45}
                         y={seatSize + 20}
                         width={seatSize * 2}
-                        height={60}
+                        height={75}
                       >
                         <div
                           style={{
                             backgroundColor: "rgba(31, 41, 55, 0.8)",
+                            height: "100%",
                             borderRadius: "9999px",
                             padding: "4px 8px",
                             textAlign: "center",
@@ -1357,7 +1311,6 @@ export const PokerTableSVG = memo(
                           </span>
                           <span
                             style={{
-                              display: "block",
                               fontSize: `${fontSizeMultiplier * 10}px`,
                             }}
                           >
@@ -1365,53 +1318,15 @@ export const PokerTableSVG = memo(
                           </span>
                         </div>
                       </foreignObject>
-
-                      {seat.player.currentBet > 0 && (
-                        <foreignObject
-                          x={-seatSize - 10}
-                          y={seatSize - 10}
-                          width={seatSize}
-                          height={60}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                            }}
-                          >
-                            {getChipStack(seat.player.currentBet).map(
-                              (chip, chipIndex) => (
-                                <Image
-                                  key={chipIndex}
-                                  src={chip.src}
-                                  alt={`Chip ${chipIndex}`}
-                                  width={40 * scale}
-                                  height={40 * scale}
-                                  style={{
-                                    marginTop:
-                                      chipIndex === 0 ? 0 : -15 * scale,
-                                    zIndex:
-                                      getChipStack(seat.player!.currentBet)
-                                        .length - chipIndex,
-                                    opacity: inHand ? 1 : 0.5,
-                                  }}
-                                />
-                              ),
-                            )}
-                            <span
-                              style={{
-                                color: "#fff",
-                                fontWeight: "bold",
-                                marginTop: "4px",
-                                fontSize: `${fontSizeMultiplier * 12}px`,
-                                opacity: inHand ? 1 : 0.5,
-                              }}
-                            >
-                              {formatBetAmount(seat.player.currentBet)}
-                            </span>
-                          </div>
-                        </foreignObject>
+                      {isDealer && (
+                        <image
+                          x={dealerXOffset + 30}
+                          y={seatSize + 60}
+                          width={30}
+                          height={30}
+                          href="/poker/dealer.svg"
+                          preserveAspectRatio="xMidYMid meet"
+                        />
                       )}
                     </>
                   ) : (
@@ -1451,12 +1366,8 @@ export const PokerTableSVG = memo(
               );
             })}
 
-            {/* Player Cards with Highlight */}
             {displayPositions.map((seat) => {
-              const { x, y } = getSeatPosition(
-                seat.seatIndex,
-                cappedMaxPlayers,
-              );
+              const { x, y } = getSeatPosition(seat.seatIndex, cappedMaxPlayers);
               const showdownData =
                 seat.occupied &&
                 showdownPlayers.find(
@@ -1485,8 +1396,8 @@ export const PokerTableSVG = memo(
                 !isDealing &&
                 inHand
               ) {
-                const cardX = x < 420 ? x + seatSize - 40 : x - 120;
-                const cardY = y - 60;
+                const cardX = x < 420 ? x + seatSize - 90 : x - 180;
+                const cardY = y - 70;
 
                 const isCardOpen =
                   isAdmin ||
@@ -1501,10 +1412,10 @@ export const PokerTableSVG = memo(
                 return cardsToShow.map((card, idx) => (
                   <g key={`${seat.seatIndex}-card-${idx}`}>
                     <image
-                      x={cardX + idx * 35}
+                      x={cardX + idx * 60}
                       y={cardY}
-                      width={60}
-                      height={75}
+                      width={120}
+                      height={100}
                       href={isCardOpen ? getCardImagePath(card) : "/card.png"}
                       preserveAspectRatio="xMidYMid meet"
                       className={
@@ -1522,6 +1433,7 @@ export const PokerTableSVG = memo(
         </div>
       );
     };
+
     return isMobile ? <MobileSVG /> : <DesktopSVG />;
   },
 );

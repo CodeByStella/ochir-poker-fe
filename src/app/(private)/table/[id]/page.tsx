@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
-import io, { Socket } from "socket.io-client";
 import useSWR from "swr";
 import { authApi } from "@/apis";
 import { message as toastMessage } from "@/utils/toast";
@@ -10,7 +9,6 @@ import cardBack from "../../../../../public/card.png";
 import { PokerTableSVG } from "./PokerTableSVG";
 import cardStyles from "../../../../components/card/Card.module.css";
 import LoginModal from "@/components/modal/Login";
-import { siteApi } from "@/config/site";
 import { Header } from "@/components/header";
 import ChatComponent from "@/components/PokerTable/ChatSection";
 import Waitinglist from "@/components/PokerTable/WaitingList";
@@ -22,6 +20,8 @@ import { RootState } from "@/store";
 import { IUser } from "@/models/user";
 import ButtonNav from "@/components/PokerTable/ButtonNav";
 import { ITable } from "@/models/table";
+import { io, Socket } from "socket.io-client";
+import { siteApi } from "@/config/site";
 
 const socket: Socket = io(`${siteApi}`, {
   withCredentials: true,
@@ -137,7 +137,7 @@ export default function PokerTable() {
       }
 
       container.innerHTML = "";
-      const dealStep = 200;
+      const dealStep = 100;
       let totalTime = 0;
 
       players.forEach((player, playerIndex) => {
@@ -199,7 +199,7 @@ export default function PokerTable() {
     const handleTableUpdate = (data: ITable) => {
       setTable(data);
       updateAdminPreviewCards(data);
-      setRaiseAmount(data?.currentBet + 10);
+      setRaiseAmount(data?.currentBet + data?.bigBlind);
       setWinners([]);
       if (
         data.status === "playing" &&
@@ -380,7 +380,7 @@ export default function PokerTable() {
         clearInterval(currentTurnTimer);
       }
     };
-  }, [tableId, currentUser?._id, isAdmin, shuffleSound, animateDealCards, table?.maxPlayers, potSound, flipSound, chipSound]);
+  }, [ tableId, currentUser?._id, isAdmin, shuffleSound, animateDealCards, table?.maxPlayers, potSound, flipSound, chipSound]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: any) => {

@@ -34,7 +34,6 @@ export function Header() {
       const res = await authApi.me();
       return res;
     } catch (err: any) {
-      message.error(err.message || "Failed to fetch user data");
       throw err;
     }
   });

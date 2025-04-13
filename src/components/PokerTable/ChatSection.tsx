@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; 
 import { motion, AnimatePresence } from "framer-motion";
 import { Socket } from "socket.io-client";
 import { IUser } from "@/models/user";
@@ -27,9 +27,20 @@ export default function ChatComponent({ socket, tableId, currentUser }: ChatComp
   });
   const [messageInput, setMessageInput] = useState<string>("");
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  
+  // Create a ref for the messages container
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Function to scroll to the bottom of the messages
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   useEffect(() => {
     socket.emit("getTableData", tableId);
+
 
     socket.emit("getLobbyMessages");
 
@@ -78,8 +89,13 @@ export default function ChatComponent({ socket, tableId, currentUser }: ChatComp
     };
   }, [socket, tableId]);
 
+  // Scroll to bottom whenever messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   const sendMessage = () => {
-    if (!messageInput.trim() || !currentUser) return;
+    if (!messageInput.trim() || !currentUser || !socket) return;
 
     socket.emit("sendMessage", {
       lobbyId: tableId,
@@ -89,18 +105,26 @@ export default function ChatComponent({ socket, tableId, currentUser }: ChatComp
     });
 
     setMessageInput("");
+    // Scroll to bottom after sending a message
+    scrollToBottom();
   };
 
   const renderMessages = (chatType: "table" | "lobby") => {
-    return messages[chatType].map((msg, index) => (
-      <div key={index} className="text-white p-2">
-        <span className="font-bold">{msg.user.name}: </span>
-        <span>{msg.content}</span>
-        <span className="text-gray-400 text-xs ml-2">
-          {new Date(msg.timestamp).toLocaleTimeString()}
-        </span>
-      </div>
-    ));
+    return (
+      <>
+        {messages[chatType].map((msg, index) => (
+          <div key={index} className="text-white p-2">
+            <span className="font-bold">{msg.user.name}: </span>
+            <span>{msg.content}</span>
+            <span className="text-gray-400 text-xs ml-2">
+              {new Date(msg.timestamp).toLocaleTimeString()}
+            </span>
+          </div>
+        ))}
+        {/* Dummy div for scrolling to the bottom */}
+        <div ref={messagesEndRef} />
+      </>
+    );
   };
 
   return (
@@ -203,9 +227,7 @@ export default function ChatComponent({ socket, tableId, currentUser }: ChatComp
                 {currentUser && (
                   <div className="p-2 border-t border-gray-700">
                     {activeTab === "lobby" && currentUser.role !== "admin" ? (
-                      <p className="text-gray-400 text-sm">
-                      🔒 👑
-                    </p>
+                      <p className="text-gray-400 text-sm">🔒 👑</p>
                     ) : (
                       <div className="flex gap-2">
                         <input
@@ -286,9 +308,7 @@ export default function ChatComponent({ socket, tableId, currentUser }: ChatComp
             {currentUser && (
               <div className="p-2 border-t border-gray-700">
                 {activeTab === "lobby" && currentUser.role !== "admin" ? (
-                  <p className="text-gray-400 text-sm">
-                    🔒 👑
-                  </p>
+                  <p className="text-gray-400 text-sm">🔒 👑</p>
                 ) : (
                   <div className="flex gap-2">
                     <input

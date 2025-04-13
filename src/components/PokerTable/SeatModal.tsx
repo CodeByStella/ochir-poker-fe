@@ -1,6 +1,6 @@
 import { ITable } from '@/models/table';
 import { IUser } from '@/models/user';
-import React, { memo, SetStateAction, useState } from 'react';
+import React, { memo, SetStateAction, useState, useCallback, useEffect } from 'react';
 
 type Props = {
   table: ITable;
@@ -28,43 +28,80 @@ const SeatModal = memo(
     const range = Math.min(maxBuyIn, userAmount) - buyIn;
     const isInsufficientFunds = userAmount < buyIn;
     const [inputValue, setInputValue] = useState(chipAmount.toString());
+    const [debouncedChipAmount, setDebouncedChipAmount] = useState(chipAmount);
 
-    const handlePercentageClick = (percentage: number) => {
-      if (isInsufficientFunds) return;
-      const newAmount = buyIn + (range * percentage) / 100;
-      setChipAmount(newAmount);
-      setInputValue(newAmount.toString());
-    };
+    // Sync inputValue when chipAmount changes externally
+    useEffect(() => {
+      setInputValue(chipAmount.toString());
+    }, [chipAmount]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      setInputValue(value); 
-    };
+    // Debounce slider changes
+    useEffect(() => {
+      const handler = setTimeout(() => {
+        setChipAmount(debouncedChipAmount);
+      }, 50); // 50ms debounce delay
+      return () => clearTimeout(handler);
+    }, [debouncedChipAmount, setChipAmount]);
 
-    const handleInputBlur = () => {
+    const handlePercentageClick = useCallback(
+      (percentage: number) => {
+        if (isInsufficientFunds) return;
+        const newAmount = Math.round(buyIn + (range * percentage) / 100);
+        setChipAmount(newAmount);
+        setDebouncedChipAmount(newAmount);
+        setInputValue(newAmount.toString());
+      },
+      [buyIn, range, isInsufficientFunds, setChipAmount]
+    );
+
+    const handleInputChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setInputValue(value);
+      },
+      []
+    );
+
+    const handleInputBlur = useCallback(() => {
       const value = Number(inputValue);
       if (!isNaN(value)) {
-        if (value < buyIn) {
+        const roundedValue = Math.round(value);
+        if (roundedValue < buyIn) {
           setChipAmount(buyIn);
+          setDebouncedChipAmount(buyIn);
           setInputValue(buyIn.toString());
-        } else if (value > Math.min(maxBuyIn, userAmount)) {
+        } else if (roundedValue > Math.min(maxBuyIn, userAmount)) {
           const maxAllowed = Math.min(maxBuyIn, userAmount);
           setChipAmount(maxAllowed);
+          setDebouncedChipAmount(maxAllowed);
           setInputValue(maxAllowed.toString());
         } else {
-          setChipAmount(value);
-          setInputValue(value.toString());
+          setChipAmount(roundedValue);
+          setDebouncedChipAmount(roundedValue);
+          setInputValue(roundedValue.toString());
         }
       } else {
         setInputValue(chipAmount.toString());
       }
-    };
+    }, [inputValue, buyIn, maxBuyIn, userAmount, chipAmount, setChipAmount]);
 
-    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        handleInputBlur();
-      }
-    };
+    const handleKeyPress = useCallback(
+      (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+          handleInputBlur();
+        }
+      },
+      [handleInputBlur]
+    );
+
+    const handleSliderChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = Number(e.target.value);
+        setDebouncedChipAmount(value);
+        setInputValue(value.toString());
+      },
+      []
+    );
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-[1000]">
@@ -98,9 +135,9 @@ const SeatModal = memo(
                 onKeyPress={handleKeyPress}
                 min={buyIn}
                 max={Math.min(maxBuyIn, userAmount)}
-                step="0.1"
+                step="1"
                 disabled={isInsufficientFunds}
-                className="w-2/3 p-2 bg-gray-700 text-white rounded-lg border border-gray-600 disabled:opacity-50 text-center"
+                className="w-2/3 p-2 bg-gray-700 text-white rounded-lg border border-gray-600 disabled:opacity-50 text-center focus:outline-none focus:ring-2 focus:ring-yellow-600"
               />
               <div className="flex items-center justify-between w-full gap-2">
                 <span className="text-white font-bold text-sm md:text-base">
@@ -108,17 +145,13 @@ const SeatModal = memo(
                 </span>
                 <input
                   type="range"
-                  value={chipAmount}
-                  onChange={(e) => {
-                    const value = Number(e.target.value);
-                    setChipAmount(value);
-                    setInputValue(value.toString());
-                  }}
+                  value={debouncedChipAmount}
+                  onChange={handleSliderChange}
                   min={buyIn}
                   max={Math.min(maxBuyIn, userAmount)}
-                  step="0.1"
+                  step="1"
                   disabled={isInsufficientFunds}
-                  className="w-full h-2 bg-gray-600 rounded-lg cursor-pointer disabled:opacity-50"
+                  className="w-full h-2 bg-gray-600 rounded-full cursor-pointer disabled:opacity-50 accent-yellow-600 transition-all duration-200"
                 />
               </div>
             </div>
@@ -127,21 +160,21 @@ const SeatModal = memo(
               <button
                 onClick={() => handlePercentageClick(25)}
                 disabled={isInsufficientFunds}
-                className="px-3 py-1 border-2 border-blue-400 text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 border-2 border-blue-400 text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-500/20 transition-colors"
               >
                 25%
               </button>
               <button
                 onClick={() => handlePercentageClick(50)}
                 disabled={isInsufficientFunds}
-                className="px-3 py-1 border-2 border-blue-400 text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 border-2 border-blue-400 text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-500/20 transition-colors"
               >
                 50%
               </button>
               <button
                 onClick={() => handlePercentageClick(75)}
                 disabled={isInsufficientFunds}
-                className="px-3 py-1 border-2 border-blue-400 text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1 border-2 border-blue-400 text-white rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-500/20 transition-colors"
               >
                 75%
               </button>
@@ -151,7 +184,7 @@ const SeatModal = memo(
           <div className="flex justify-between mt-6">
             <button
               onClick={closeModal}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
             >
               Үгүй
             </button>
@@ -160,7 +193,7 @@ const SeatModal = memo(
                 selectedSeat !== null && joinSeat(selectedSeat, chipAmount)
               }
               disabled={chipAmount < buyIn || isInsufficientFunds}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-500 disabled:opacity-50"
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-500 disabled:opacity-50 transition-colors"
             >
               Тийм
             </button>
