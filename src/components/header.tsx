@@ -40,16 +40,16 @@ export function Header() {
 
   const handleAddMoney = () => {
     if (!currentUser?._id || addAmount <= 0) {
-      message.error("Please enter a valid amount");
+      message.error("Дүн оруулна уу");
       return;
     }
     if (addAmount > (currentUser?.amount || 0)) {
-      message.error("Insufficient balance");
+      message.error("Үлдэгдэл хүрэлцэхгүй байна");
       return;
     }
     const tableId = window.location.pathname.split("/")[2];
     if (!tableId) {
-      message.error("You must be at a table to add chips");
+      message.error("Ширээнд сууна уу!");
       return;
     }
 
@@ -59,7 +59,7 @@ export function Header() {
       amount: addAmount,
     });
 
-    message.success(`Added ${addAmount} chips to the table`);
+    message.success(`${addAmount} дүнтэй чипээр цэнэглэгдлээ!`);
     setIsAddMoneyModalOpen(false);
     setAddAmount(0);
   };
@@ -67,7 +67,7 @@ export function Header() {
   const handleInfoClick = () => {
     const tableId = window.location.pathname.split("/")[2];
     if (!tableId) {
-      message.error("You must be at a table to view table info");
+      message.error("Ширээнд сууна уу!");
       return;
     }
 
@@ -80,19 +80,19 @@ export function Header() {
   const handleLeaveTable = () => {
     const tableId = window.location.pathname.split("/")[2];
     if (!tableId) {
-      message.error("You must be at a table to leave");
+      message.error("Ширээнд сууна уу!");
       return;
     }
 
     if (!isPlayerAtTable) {
-      message.error("You are not at the table");
+      message.error("Та ширээнд байхгүй байна");
       return;
     }
 
-    if (window.confirm("Are you sure you want to leave the table?")) {
+    if (window.confirm("Гарахдаа итгэлтэй байна уу?")) {
       socket.emit("leaveSeat", { tableId, userId: currentUser._id });
     } else {
-      message.success("Leave action canceled");
+      // message.success("Leave action canceled");
     }
   };
 
@@ -152,7 +152,7 @@ export function Header() {
       });
 
       socket.on("leftTable", ({ chipsRefunded }) => {
-        message.success(`You have left the table and reclaimed ${chipsRefunded} chips`);
+        message.success(`Та ширээнээс гарлаа!`);
         router.push("/");
         setHasAutoFullscreenTriggered(false);
         setTableData(null); 

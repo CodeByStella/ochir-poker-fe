@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IBank } from "@/models/bank";
-import { IUser } from "@/models/user";
 
 interface MobileBottomNavProps {
   isSidebarOpen: boolean;
@@ -11,7 +10,7 @@ interface MobileBottomNavProps {
   isCassOpen: boolean;
   setIsCassOpen: (open: boolean) => void;
   lobbyMessages: any[];
-  bankData?: IBank[]; 
+  bankData?: IBank[];
   bankError?: any;
   userData: any;
 }
@@ -70,9 +69,58 @@ export default function MobileBottomNav({
   userData,
   bankError,
 }: MobileBottomNavProps) {
+  const chatRef = useRef<HTMLDivElement>(null);
+  const cassRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+
+  // Close panels when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Ignore clicks within the bottom nav
+      if (navRef.current && navRef.current.contains(event.target as Node)) {
+        return;
+      }
+
+      // Close chat panel if click is outside
+      if (
+        isChatOpen &&
+        chatRef.current &&
+        !chatRef.current.contains(event.target as Node)
+      ) {
+        setIsChatOpen(false);
+      }
+
+      // Close cass panel if click is outside
+      if (
+        isCassOpen &&
+        cassRef.current &&
+        !cassRef.current.contains(event.target as Node)
+      ) {
+        setIsCassOpen(false);
+      }
+
+      // Close sidebar if click is outside (and not in chat or cass panels)
+      if (
+        isSidebarOpen &&
+        (!chatRef.current || !chatRef.current.contains(event.target as Node)) &&
+        (!cassRef.current || !cassRef.current.contains(event.target as Node))
+      ) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isChatOpen, isCassOpen, isSidebarOpen, setIsChatOpen, setIsCassOpen, setIsSidebarOpen]);
+
   return (
     <>
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-900/90 backdrop-blur-md p-2 flex justify-around items-center shadow-lg z-50">
+      <div
+        ref={navRef}
+        className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-900/90 backdrop-blur-md p-2 flex justify-around items-center shadow-lg z-50"
+      >
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
@@ -161,6 +209,7 @@ export default function MobileBottomNav({
       <AnimatePresence>
         {isChatOpen && (
           <motion.div
+            ref={chatRef}
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "100%", opacity: 0 }}
@@ -186,6 +235,7 @@ export default function MobileBottomNav({
         )}
         {isCassOpen && (
           <motion.div
+            ref={cassRef}
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "100%", opacity: 0 }}

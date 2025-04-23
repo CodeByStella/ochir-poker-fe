@@ -6,6 +6,7 @@ import { theme } from "../../theme";
 import "/src/index.css";
 import "@mantine/core/styles.css";
 import { SocketProvider } from "@/context/socket-context";
+import { Analytics } from '@vercel/analytics/next';
 
 const roboto = Roboto({
   weight: "400",
@@ -34,6 +35,7 @@ export default function RootLayout({
           overflow: "hidden"
         }}
       >
+                <Analytics />
         <SocketProvider>
         <ReduxProvider>
           <MantineProvider theme={theme}>{children}</MantineProvider>

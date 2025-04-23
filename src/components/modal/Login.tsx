@@ -82,7 +82,7 @@ const LoginModal = memo(({ modal, setModal, onSuccessfulLogin }: Props) => {
 
   return (
     <Modal
-      visible={modal}
+      open={modal}
       onCancel={() => {
         setModal(false);
         resetLogin();
@@ -92,8 +92,6 @@ const LoginModal = memo(({ modal, setModal, onSuccessfulLogin }: Props) => {
       width="90%" 
       style={{ maxWidth: "600px", minWidth: "300px" }} 
       centered
-      bodyStyle={{ padding: 0, backgroundColor: "#1a1b1e", height: "auto" }} 
-      maskStyle={{ backgroundColor: "rgba(0, 0, 0, 0.75)", backdropFilter: "blur(3px)" }}
     >
       <div className="flex flex-col md:flex-row h-auto md:h-[400px]">
         <div

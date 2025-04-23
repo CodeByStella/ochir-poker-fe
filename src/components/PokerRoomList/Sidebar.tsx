@@ -140,6 +140,7 @@ export default function Sidebar({
             width={100}
             height={100}
             className="rounded-full border-4 border-yellow-300 shadow-md"
+            priority={true}
           />
         </motion.div>
         <div className="w-full space-y-3">
@@ -156,7 +157,7 @@ export default function Sidebar({
             whileHover={{ scale: 1.05 }}
             className="w-full bg-gradient-to-r from-blue-700 to-indigo-700 text-white py-3 rounded-lg shadow-md flex justify-between items-center px-4 text-sm"
           >
-            <span className="mr-2">₮ {userData?.amount || "0"} </span>
+            <span className="mr-2">₮ {userData?.amount.toLocaleString() || "0"} </span>
             {userData?._id && (
               <WalletOutlined
                 style={{ fontSize: "20px" }}

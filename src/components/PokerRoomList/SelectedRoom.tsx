@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { PokerTableSVG } from "./../../app/(private)/table/[id]/PokerTableSVG";
 import gift from "../../../public/gift.gif";
+import { IPlayer } from "@/models/player";
 
 interface SelectedRoomProps {
   selectedRoom: {
@@ -105,7 +106,7 @@ export default function SelectedRoom({
           </motion.button>
         </div>
         <div className="w-full mt-auto flex-shrink-0 relative z-10">
-          <Image src={gift} alt="Animated GIF" width={300} height={100} className="w-full h-auto rounded-lg" />
+          <Image src={gift} alt="Animated GIF" width={300} height={100} className="w-full h-auto rounded-lg" priority />
         </div>
       </div>
     </motion.div>

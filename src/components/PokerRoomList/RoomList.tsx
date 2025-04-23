@@ -33,12 +33,12 @@ export default function RoomList({ rooms, selectedRoom, handleSelectRoom, joined
         className="bg-gray-800/80 backdrop-blur-md rounded-xl shadow-xl overflow-hidden"
       >
         <div className="hidden lg:grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] bg-gradient-to-r from-gray-700 to-gray-600 text-gray-200 p-3 text-sm font-bold sticky top-0 z-10">
-          <p>Room</p>
-          <p>Status</p>
-          <p>Blinds</p>
-          <p>Players</p>
-          <p>Buy-In</p>
-          <p>Action</p>
+          <p>Нэр</p>
+          <p>төлөв</p>
+          <p>Ул</p>
+          <p>Тоглогчид</p>
+          <p>Суух дүн</p>
+          <p>Тоглох</p>
         </div>
         <div className="overflow-y-auto max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-450px)]">
           {rooms.length > 0 ? (
@@ -77,11 +77,11 @@ export default function RoomList({ rooms, selectedRoom, handleSelectRoom, joined
                         </svg>
                         <p className="text-red-400 text-xs">{room.players}</p>
                       </div>
-                      <p className="text-green-400 text-xs">₮ {room.blinds}</p>
+                      <p className="text-green-400 text-xs">₮ {room.blinds.toLocaleString()}</p>
                     </div>
                     <div className="flex justify-between items-center">
                       <p className="text-blue-300 text-xs">Buy In:</p>
-                      <p className="text-blue-300 text-xs">{room.buyIn}</p>
+                      <p className="text-blue-300 text-xs">{room.buyIn.toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
@@ -90,9 +90,9 @@ export default function RoomList({ rooms, selectedRoom, handleSelectRoom, joined
                 <div className="hidden lg:grid lg:grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] p-4 text-sm gap-2">
                   <p className={`${room.color} font-semibold truncate`}>{room.name}</p>
                   <p className="text-yellow-300">{room.status}</p>
-                  <p className="text-yellow-300">{room.blinds}</p>
+                  <p className="text-yellow-300">{room.blinds.toLocaleString()}</p>
                   <p className="text-red-400">{room.players}</p>
-                  <p className="text-blue-300">{room.buyIn}</p>
+                  <p className="text-blue-300">{room.buyIn.toLocaleString()}</p>
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
@@ -113,7 +113,7 @@ export default function RoomList({ rooms, selectedRoom, handleSelectRoom, joined
               </motion.div>
             ))
           ) : (
-            <p className="p-4 text-gray-400">No rooms available yet. Loading...</p>
+            <p className="p-4 text-gray-400">Түр хүлээнэ үү...</p>
           )}
         </div>
       </motion.div>

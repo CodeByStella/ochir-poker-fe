@@ -1,9 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
-import { useState, useEffect, useRef } from "react"; 
+import { useState, useEffect, useRef, Dispatch, SetStateAction } from "react"; 
 import { motion, AnimatePresence } from "framer-motion";
 import { Socket } from "socket.io-client";
 import { IUser } from "@/models/user";
+import { IMessage } from "@/models/poker";
 
 interface Message {
   chatType: "table" | "lobby";
@@ -13,18 +14,19 @@ interface Message {
 }
 
 interface ChatComponentProps {
-  socket: Socket;
+  socket: Socket<any, any> | null
   tableId: string;
   currentUser?: IUser | null;
+  messages: {
+    table: IMessage[];
+    lobby: IMessage[];
+};
 }
 
-export default function ChatComponent({ socket, tableId, currentUser }: ChatComponentProps) {
+export default function ChatComponent({ socket, tableId, currentUser, messages, }: ChatComponentProps) {
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"table" | "lobby">("table");
-  const [messages, setMessages] = useState<{ table: Message[]; lobby: Message[] }>({
-    table: [],
-    lobby: [],
-  });
+
   const [messageInput, setMessageInput] = useState<string>("");
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   
@@ -37,58 +39,6 @@ export default function ChatComponent({ socket, tableId, currentUser }: ChatComp
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   };
-
-  useEffect(() => {
-    socket.emit("getTableData", tableId);
-
-
-    socket.emit("getLobbyMessages");
-
-    socket.on("tableData", (table: any) => {
-      const tableMessages = (table.messages || []).map((msg: any) => ({
-        chatType: "table" as const,
-        user: { _id: msg.user._id, name: msg.user.name },
-        content: msg.content,
-        timestamp: new Date(msg.timestamp),
-      }));
-      setMessages((prev) => ({
-        ...prev,
-        table: tableMessages,
-      }));
-    });
-
-    socket.on("lobbyMessages", (lobbyMessages: any[]) => {
-      const formattedLobbyMessages = lobbyMessages.map((msg: any) => ({
-        chatType: "lobby" as const,
-        user: { _id: msg.user._id, name: msg.user.name },
-        content: msg.content,
-        timestamp: new Date(msg.timestamp),
-      }));
-      setMessages((prev) => ({
-        ...prev,
-        lobby: formattedLobbyMessages,
-      }));
-    });
-
-    socket.on("newMessage", (message: Message) => {
-      setMessages((prev) => ({
-        ...prev,
-        [message.chatType]: [...prev[message.chatType], message],
-      }));
-    });
-
-    socket.on("error", (error: { message: string }) => {
-      console.error("Chat error:", error.message);
-    });
-
-    return () => {
-      socket.off("tableData");
-      socket.off("lobbyMessages");
-      socket.off("newMessage");
-      socket.off("error");
-    };
-  }, [socket, tableId]);
-
   // Scroll to bottom whenever messages change
   useEffect(() => {
     scrollToBottom();
