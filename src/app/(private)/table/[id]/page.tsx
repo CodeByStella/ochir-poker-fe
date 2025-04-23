@@ -451,41 +451,45 @@ export default function PokerTable() {
       chipStackContainer.style.transform = "translate(-50%, -50%)";
       container.appendChild(chipStackContainer);
       animatedElementsRef.current.push(chipStackContainer);
+      
   
       // Create individual chip elements
       const chipElements: HTMLElement[] = [];
+      const chipHeight = isMobile ? 15 : 30; // Match chip height for offset calculation
+      const verticalOffset = isMobile ? -5 : -5; // Reduced vertical offset for a more compact stack
+  
       for (let i = 0; i < chipCount; i++) {
         const chipContainer = document.createElement("div");
         chipContainer.style.position = "absolute";
         chipContainer.style.display = "flex";
         chipContainer.style.alignItems = "center";
-        chipContainer.style.gap = isMobile ? "4px" : "6px";
-  
-        // Only show amount text on the top chip, matching renderMergedChips
-        if (i === chipCount - 1) {
-          const amountText = document.createElement("span");
-          amountText.className = `text-white ${isMobile ? "text-xs" : "text-sm"} font-bold`;
-          amountText.style.textShadow = "0 1px 2px rgba(0, 0, 0, 0.5)";
-          amountText.textContent = `${formatNumber(amount)}`;
-          chipContainer.appendChild(amountText);
-        }
   
         const chip = document.createElement("div");
-        chip.style.width = isMobile ? "15px" : "20px"; // Match renderMergedChips
-        chip.style.height = isMobile ? "15px" : "20px"; // Match renderMergedChips
-        chip.style.background = `url('${getChipSvg(i, amount)}') no-repeat center / cover`;
+        chip.style.width = isMobile ? "15px" : "30px"; // Match renderMergedChips
+        chip.style.height = `${chipHeight}px`; // Match renderMergedChips
+        chip.style.background = `url('${getChipSvg(i, amount)}') no-repeat center / cover`; // Ensure varied colors
         chip.style.borderRadius = "50%";
         chip.style.boxShadow = "0 2px 5px rgba(0, 0, 0, 0.3)"; // Match original shadow
   
-        // Match renderMergedChips stacking transform
-        const xOffset = (Math.random() - 0.5) * (isMobile ? 2 : 3);
-        const yOffset = -i * (isMobile ? 2 : 3);
-        chipContainer.style.transform = `translate(${xOffset}px, ${yOffset}px)`;
+        // Apply vertical offset for stacking
+        chipContainer.style.transform = `translate(0px, ${i * verticalOffset}px)`;
+        chipContainer.style.zIndex = `${300 + i}`; // Increment z-index to ensure top chip is visible
   
         chipContainer.appendChild(chip);
         chipStackContainer.appendChild(chipContainer);
         chipElements.push(chipContainer);
       }
+  
+      // Add amount text next to the stack
+      const amountText = document.createElement("span");
+      amountText.className = `text-white ${isMobile ? "text-xs" : "text-sm"} font-bold`;
+      amountText.style.textShadow = "0 1px 2px rgba(0, 0, 0, 0.5)";
+      amountText.textContent = `${formatNumber(amount)}`; // Ensure formatNumber matches "38k" style
+      amountText.style.position = "absolute";
+      amountText.style.left = isMobile ? "20px" : "25px"; // Adjusted spacing to the right of the stack
+      amountText.style.top = `${(chipCount - 1) * verticalOffset / 2}px`; // Vertically center relative to stack
+      amountText.style.zIndex = "350"; // Ensure text is above chips
+      chipStackContainer.appendChild(amountText);
   
       // Animate the entire chip stack
       const tween = gsap.fromTo(
@@ -1502,7 +1506,8 @@ const handleCollectChips = (data: ICollectChip) => {
             flipAnimationComplete={flipAnimationComplete}
             flippedCardIndices={flippedCardIndicesRef.current}
             isMyTurn={isMyTurn}
-          />
+            currentPlayer={currentPlayer}
+            />
           <div
             ref={animationContainerRef}
             className="absolute"
