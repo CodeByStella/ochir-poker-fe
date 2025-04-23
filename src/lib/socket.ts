@@ -19,6 +19,7 @@ export const getSocket = (token?: string): Socket => {
     reconnection: true, // Enable automatic reconnection
     reconnectionAttempts: 5, // Retry 5 times
     reconnectionDelay: 1000, // Wait 1s between retries,
+    transports: ["websocket", "polling"], // Use WebSocket transport
   });
 
   // Handle connection events
