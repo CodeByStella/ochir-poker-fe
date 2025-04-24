@@ -30,7 +30,7 @@ interface PokerTableSVGProps {
   flipAnimationComplete?: boolean;
   flippedCardIndices?: Set<Number>;
   isMyTurn?: boolean;
-  currentPlayer?: IPlayer;
+  currentPlayer: IPlayer;
 }
 
 interface PlayerAction {
@@ -502,8 +502,8 @@ export const PokerTableSVG = memo(
       const adminTotalWidth =
         adminPreviewCards.length * adminCardWidth +
         (adminPreviewCards.length - 1) * 5;
-      const adminCardsX = centerX - adminTotalWidth / 2 - 50;
-      const adminCardsY = centerY - 50;
+        const adminCardsX = centerX - adminTotalWidth / 2 - 50;
+        const adminCardsY = communityCardsY + cardHeight - 160;
 
       const turnCircleRadius = seatSize / 2 + 5;
       const turnCircleCircumference = 2 * Math.PI * turnCircleRadius;
@@ -604,6 +604,7 @@ export const PokerTableSVG = memo(
               textAnchor="middle"
               
               fill="#BEBEBE"
+              fontWeight="Bold"
               fontSize={"24"}
             >
               {table.name} Stakes: {table.smallBlind}/{table.bigBlind}
@@ -737,7 +738,7 @@ export const PokerTableSVG = memo(
               >
                 {seat.occupied && seat.player  ? (
                   <>
-                    {isCurrentTurn && inHand && currentPlayer && currentPlayer.cards.length > 0 && !winners.length &&(
+                    {isCurrentTurn && inHand && currentPlayer?.cards.length > 0 &&(
                       <circle
                         cx={seatSize / 2}
                         cy={seatSize / 2}
@@ -751,7 +752,7 @@ export const PokerTableSVG = memo(
                         }}
                       />
                     )}
-                    {isCurrentTurn && inHand && currentPlayer && currentPlayer.cards.length > 0 && !winners.length &&(
+                    {isCurrentTurn && inHand && currentPlayer?.cards.length > 0 &&(
                       <text
                         x={seatSize / 2}
                         y={-10}
@@ -1058,7 +1059,7 @@ export const PokerTableSVG = memo(
         adminPreviewCards.length * adminCardWidth +
         (adminPreviewCards.length - 1) * 10;
       const adminCardsX = centerX - adminTotalWidth / 2 - 50;
-      const adminCardsY = centerY - 50;
+      const adminCardsY = communityCardsY + cardHeight + 150;
 
       const turnCircleRadius = seatSize / 2 + 5;
       const turnCircleCircumference = 2 * Math.PI * turnCircleRadius;
@@ -1318,7 +1319,7 @@ export const PokerTableSVG = memo(
                 >
                   {seat.occupied && seat.player  ?  (
                     <>
-                      {isCurrentTurn && inHand && currentPlayer && currentPlayer?.cards.length > 0 && !winners.length &&(
+                      {isCurrentTurn && inHand && currentPlayer?.cards.length > 0 &&(
                         <circle
                           cx={seatSize / 2}
                           cy={seatSize / 2}
@@ -1332,7 +1333,7 @@ export const PokerTableSVG = memo(
                           }}
                         />
                       )}
-                      {isCurrentTurn && inHand && currentPlayer && currentPlayer?.cards.length > 0 && !winners.length &&(
+                      {isCurrentTurn && inHand && currentPlayer?.cards.length > 0 &&(
                         <text
                           x={seatSize / 2}
                           y={-10}
