@@ -762,8 +762,17 @@ export default function PokerTable() {
 
   const updateAdminPreviewCards = (tableData: ITable) => {
     if (isAdmin && tableData.status === "playing" && tableData.deck.length >= 5) {
-      const lastFive = tableData.deck.slice(-5);
-      setAdminPreviewCards(lastFive);
+      const flippedCards = tableData.communityCards.filter((card) => card !== "");
+      const flippedCount = flippedCards.length;
+  
+      const cardsToShow = Math.max(0, 5 - flippedCount);
+  
+      const lastCards = tableData.deck
+        .slice(-5) 
+        .filter((card) => !flippedCards.includes(card)) 
+        .slice(-cardsToShow);
+  
+      setAdminPreviewCards(lastCards);
     } else {
       setAdminPreviewCards([]);
     }
