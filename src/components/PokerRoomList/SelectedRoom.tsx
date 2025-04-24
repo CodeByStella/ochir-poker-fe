@@ -83,8 +83,8 @@ export default function SelectedRoom({
               winners={winners}
               onSeatClick={(seatId: any) => console.log(`Seat clicked: ${seatId}`)}
               isUserSeated={false}
-              table={tableData}
-            />
+              table={tableData} 
+              currentPlayer={tableData?.currentPlayer}/>
           </div>
         </div>
         <div className="w-full flex justify-between mb-4 flex-shrink-0 relative z-10">
