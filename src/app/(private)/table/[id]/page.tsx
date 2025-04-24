@@ -171,7 +171,6 @@ export default function PokerTable() {
       if (isChip && (isActiveChip || isTweenActive)) {
         return true;
       }
-      console.log(`Removing chip element with key=${el.dataset.key}`);
       safeRemoveChild(animationContainerRef.current!, el);
       return false;
     });
@@ -267,7 +266,6 @@ export default function PokerTable() {
         return;
       }
   
-      console.log(`Animating card flip: card=${card}, index=${cardIndex}, round=${round}`);
   
       cleanupAnimations();
       setIsAnimating(true);
@@ -312,12 +310,10 @@ export default function PokerTable() {
       cardElement.style.width = `${cardWidth * scaleX}px`;
       cardElement.style.height = `${cardHeight * scaleY}px`;
       cardElement.style.zIndex = "100";
-      cardElement.innerHTML = `<img src="${getCardImagePath(
-        card
-      )}" alt="Card" style="width: 100%; height: 100%;" />`;
+      cardElement.innerHTML = `<img src="${cardBack.src}" alt="Card Back" style="width: 100%; height: 100%;" />`;
       container.appendChild(cardElement);
       animatedElementsRef.current.push(cardElement);
-  
+
       const tween = gsap.fromTo(
         cardElement,
         {
@@ -335,11 +331,17 @@ export default function PokerTable() {
           scale: 1,
           duration: 0.6,
           ease: "power2.out",
+
           onStart: () => {
             flipSound.play().catch((err) => console.error("Error playing flip sound:", err));
           },
+          onUpdate: function () {
+            if (this.progress() >=  0.3 ) {
+              const frontImagePath = getCardImagePath(card) || "/card.png";
+              cardElement.innerHTML = `<img src="${frontImagePath}" alt="Card" style="width: 100%; height: 100%;" />`;
+            }
+          },
           onComplete: () => {
-            console.log(`Card flip completed: card=${card}, index=${cardIndex}`);
             cleanupAnimations();
             setIsAnimating(false);
             setIsFlippingCommunityCards(false);
@@ -455,7 +457,7 @@ export default function PokerTable() {
   
       // Create individual chip elements
       const chipElements: HTMLElement[] = [];
-      const chipHeight = isMobile ? 15 : 30; // Match chip height for offset calculation
+      const chipHeight = isMobile ? 15 : 20; // Match chip height for offset calculation
       const verticalOffset = isMobile ? -5 : -5; // Reduced vertical offset for a more compact stack
   
       for (let i = 0; i < chipCount; i++) {
@@ -465,7 +467,7 @@ export default function PokerTable() {
         chipContainer.style.alignItems = "center";
   
         const chip = document.createElement("div");
-        chip.style.width = isMobile ? "15px" : "30px"; // Match renderMergedChips
+        chip.style.width = isMobile ? "15px" : "20px"; // Match renderMergedChips
         chip.style.height = `${chipHeight}px`; // Match renderMergedChips
         chip.style.background = `url('${getChipSvg(i, amount)}') no-repeat center / cover`; // Ensure varied colors
         chip.style.borderRadius = "50%";
@@ -543,11 +545,11 @@ export default function PokerTable() {
                 );
                 return newAnimations;
               });
-              chipStackContainer.style.transform = `translate(${targetX}px, ${targetY}px) scale(1)`;
+              chipStackContainer.style.transform = `translate(${targetX}px, ${targetY}px) scale0`;
               chipStackContainer.style.opacity = "0.9";
               chipStackContainer.style.zIndex = "300";
             }
-  
+          
             gsapAnimationsRef.current = gsapAnimationsRef.current.filter((t) => t !== tween);
             setIsAnimating(chipAnimations.length > 0);
             processAnimationQueue();
@@ -574,7 +576,6 @@ export default function PokerTable() {
   
     isProcessingAnimationRef.current = true;
     const item = animationQueueRef.current.shift()!;
-    console.log(`Processing animation: type=${item.type}, data=`, item.data);
   
     if (item.type === "cardFlip") {
       const data = item.data as IFlipCommunityCardData;
@@ -854,7 +855,9 @@ const handleGameStarted = (data: ITable) => {
   setFlipAnimationComplete(true);
   setIsFlippingCommunityCards(false);
   flippedCardIndicesRef.current.clear();
-  setChipAnimations([]);
+  
+  // Clear all chip animations except pot-to-winner
+  setChipAnimations((prev) => prev.filter((anim) => anim.isPotToWinner));
   setMergedChips([]);
   setIsCollectChipsComplete(true);
   animationQueueRef.current = [];
@@ -863,9 +866,12 @@ const handleGameStarted = (data: ITable) => {
   setAnimationTimestamps(new Map());
   cleanupAnimations();
 
-  const smallBlindPlayer = data.players.find((p) => p.seat === data.smallBlind);
-  const bigBlindPlayer = data.players.find((p) => p.seat === data.bigBlind);
+  // Find small and big blind players
+  const smallBlindPlayer = data.players.find((p) => p.currentBet === data.smallBlind);
+  const bigBlindPlayer = data.players.find((p) => p.currentBet === data.bigBlind);
   const timestamp = new Date().toISOString();
+
+  // Add chip animations for blinds
   if (smallBlindPlayer && data.smallBlind > 0) {
     const key = `smallBlind-${smallBlindPlayer._id}-${timestamp}`;
     animationQueueRef.current.push({
@@ -898,6 +904,7 @@ const handleGameStarted = (data: ITable) => {
       callback: () => {},
     });
   }
+  
   processAnimationQueue();
 };
 
@@ -938,16 +945,13 @@ const handleGameStarted = (data: ITable) => {
 
   const handleFlipCommunityCard = (data: IFlipCommunityCardData) => {
     if (data.tableId !== tableId || !data.card || data.cardIndex < 0 || data.cardIndex >= 5) {
-      console.warn(`Invalid community card data: ${JSON.stringify(data)}`);
       return;
     }
   
     if (flippedCardIndicesRef.current.has(data.cardIndex)) {
-      console.log(`Card index ${data.cardIndex} already flipped, skipping`);
       return;
     }
   
-    console.log(`Queuing card flip: card=${data.card}, index=${data.cardIndex}, round=${data.round}`);
   
     if (data.round !== "preflop") {
       setShowCommunityCards(true);
@@ -957,7 +961,6 @@ const handleGameStarted = (data: ITable) => {
       type: "cardFlip",
       data,
       callback: () => {
-        console.log(`Card flip callback executed: card=${data.card}, index=${data.cardIndex}`);
         setTable((prev: any) => {
           if (!prev) return prev;
           const updatedCommunityCards = [...prev.communityCards];
@@ -1070,7 +1073,6 @@ const handleGameStarted = (data: ITable) => {
               .toString(36)
               .substring(2, 8)}`;
   
-      // Add new chip animation without removing existing ones for the same player
       setChipAnimations((prev) => {
         const exists = prev.some((anim) => anim.key === uniqueKey);
         if (!exists) {
@@ -1082,19 +1084,17 @@ const handleGameStarted = (data: ITable) => {
         return prev;
       });
   
-      // Add to animation queue
       animationQueueRef.current.push({
         type: "chipAction",
         data: { playerId, seat, amount, key: uniqueKey, round, timestamp, action },
         callback: () => {
-          console.log(`Chip action processed: playerId=${playerId}, key=${uniqueKey}, action=${action}`);
+          // console.log(`Chip action processed: playerId=${playerId}, key=${uniqueKey}, action=${action}`);
         },
       });
   
       processAnimationQueue();
     }
   };
-
   const handlePotToWinner = (data: IPotToWinnerData) => {
     if (data.tableId !== tableId) return;
     setChipAnimations((prev) => prev.filter((anim) => anim.isPotToWinner));
@@ -1114,7 +1114,6 @@ const handleGameStarted = (data: ITable) => {
 const handleCollectChips = (data: ICollectChip) => {
   if (data.tableId !== tableId) return;
 
-  console.log("Collecting chips for round:", table?.round);
   // Clear all non-pot-to-winner chips for the current round
   setChipAnimations((prev) =>
     prev.filter((anim) => anim.isPotToWinner)
@@ -1145,11 +1144,71 @@ const handleCollectChips = (data: ICollectChip) => {
       timestamp: data.timestamp,
     },
     callback: () => {
-      console.log("Collect chips animation completed");
       setChipAnimations((prev) => prev.filter((anim) => anim.isPotToWinner));
     },
   });
   processAnimationQueue();
+};
+
+const renderPlayerChips = () => {
+  const containerRect = animationContainerRef.current?.getBoundingClientRect();
+  if (!containerRect || !table) return null;
+
+  return chipAnimations
+    .filter((anim) => !anim.isCollect && !anim.isPotToWinner && anim.x && anim.y)
+    .map((anim) => {
+      const { key, amount, x, y, chipCount, round } = anim;
+      const chipHeight = isMobile ? 15 : 20;
+      const verticalOffset = isMobile ? -5 : -5;
+
+      return (
+        <div
+          key={key}
+          style={{
+            position: "absolute",
+            left: `${x}px`,
+            top: `${y}px`,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            zIndex: 300,
+            transform: "translate(-50%, -50%)",
+          }}
+          className="gap-2"
+        >
+          {Array.from({ length: chipCount || 1 }).map((_, i) => (
+            <div
+              key={`${key}-chip-${i}`}
+              style={{
+                position: "absolute",
+                transform: `translate(0px, ${i * verticalOffset}px)`,
+                display: "flex",
+                alignItems: "center",
+                gap: isMobile ? "4px" : "6px",
+                zIndex: 300 + i,
+              }}
+            >
+              <Image
+                src={getChipSvg(i, amount)}
+                width={isMobile ? 15 : 20}
+                height={isMobile ? 15 : 20}
+                alt="chip"
+              />
+              {i === (chipCount || 1) - 1 && (
+                <span
+                  className={`text-white ${isMobile ? "text-xs" : "text-sm"} font-bold`}
+                  style={{
+                    textShadow: "0 1px 2px rgba(0, 0, 0, 0.5)",
+                  }}
+                >
+                  {formatNumber(amount)}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    });
 };
   const handleClearChips = () => {
     setChipAnimations([]);
@@ -1239,7 +1298,6 @@ const handleCollectChips = (data: ICollectChip) => {
       }
 
       return () => {
-        console.log("Unsubscribing from table data");
         socket.off("tableData", handleTableData);
         socket.off("tableUpdate", handleTableData);
         socket.off("connect_error");
@@ -1518,7 +1576,8 @@ const handleCollectChips = (data: ICollectChip) => {
               zIndex: 50,
             }}
           >
-            {renderMergedChips()}
+           {renderPlayerChips()}
+           {renderMergedChips()}
           </div>
         </div>
       </div>
