@@ -503,9 +503,9 @@ export default function PokerTable() {
         {
           x: targetX,
           y: targetY,
-          scale: isCollect || isPotToWinner ? 0.8 : 1,
-          opacity: isCollect || isPotToWinner ? 0.7 : 0.9,
-          duration: isCollect ? 1.2 : isPotToWinner ? 0.8 : 0.6,
+          scale: isCollect || isPotToWinner ? 1 : 1,
+          opacity: isCollect || isPotToWinner ? 1 : 1,
+          duration: isCollect ? 1.5 : isPotToWinner ? 1.3 : 0.6,
           ease: "power2.out",
           delay: isCollect ? seat * 0.1 : isPotToWinner ? 0.2 * seat : 0,
           onStart: () => {
