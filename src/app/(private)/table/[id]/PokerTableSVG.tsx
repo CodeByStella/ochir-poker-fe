@@ -604,7 +604,6 @@ export const PokerTableSVG = memo(
               textAnchor="middle"
               
               fill="#BEBEBE"
-              fontWeight="Bold"
               fontSize={"24"}
             >
               {table.name} Stakes: {table.smallBlind}/{table.bigBlind}
