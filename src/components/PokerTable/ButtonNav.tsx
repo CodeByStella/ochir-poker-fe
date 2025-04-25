@@ -72,29 +72,30 @@ const ButtonNav = memo(
 
     const calculateRaiseAmount = useCallback(
       (percentage: number) => {
-        const minRaise = table.pot + table.bigBlind;
+        let calculatedAmount = table.pot * (percentage / 100) + table.pot;
+        const minRaise = table.currentBet; 
         const maxRaise = currentPlayer.chips;
-        let calculatedAmount = table.pot * (percentage / 100);
+    
         calculatedAmount = Math.max(minRaise, calculatedAmount);
         calculatedAmount = Math.min(maxRaise, calculatedAmount);
         calculatedAmount = Math.round(calculatedAmount);
+    
         setDebouncedRaiseAmount(calculatedAmount);
         setInputValue(calculatedAmount.toString());
       },
-      [table.currentBet, table.pot, table.bigBlind, currentPlayer.chips],
+      [table.pot, table.currentBet, table.bigBlind, currentPlayer.chips]
     );
 
     const calculatePotRaise = useCallback(() => {
-      const minRaise = table.pot + table.bigBlind;
+      const minRaise = table.currentBet + table.bigBlind;
       const maxRaise = currentPlayer.chips;
-      const potSize = table.pot + table.currentBet;
-      let calculatedAmount = potSize + table.currentBet;
+      let calculatedAmount = table.pot + table.pot;
       calculatedAmount = Math.max(minRaise, calculatedAmount);
       calculatedAmount = Math.min(maxRaise, calculatedAmount);
       calculatedAmount = Math.round(calculatedAmount);
       setDebouncedRaiseAmount(calculatedAmount);
       setInputValue(calculatedAmount.toString());
-    }, [table.currentBet, table.pot, table.bigBlind, currentPlayer.chips]);
+    }, [table.pot, table.currentBet, table.bigBlind, currentPlayer.chips]);
 
     const handleInputChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
