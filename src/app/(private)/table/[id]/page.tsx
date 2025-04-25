@@ -1023,40 +1023,40 @@ export default function PokerTable() {
       (p) => p.currentBet === data.bigBlind
     );
     const timestamp = new Date().toISOString();
-
-    // Add chip animations for blinds
-    if (smallBlindPlayer && data.smallBlind > 0) {
-      const key = `smallBlind-${smallBlindPlayer._id}-${timestamp}`;
-      animationQueueRef.current.push({
-        type: "chipAction",
-        data: {
-          playerId: smallBlindPlayer._id,
-          seat: smallBlindPlayer.seat,
-          amount: data.smallBlind,
-          key,
-          round: "preflop",
-          timestamp,
-          action: "smallBlind",
-        },
-        callback: () => {},
-      });
-    }
-    if (bigBlindPlayer && data.bigBlind > 0) {
-      const key = `bigBlind-${bigBlindPlayer._id}-${timestamp}`;
-      animationQueueRef.current.push({
-        type: "chipAction",
-        data: {
-          playerId: bigBlindPlayer._id,
-          seat: bigBlindPlayer.seat,
-          amount: data.bigBlind,
-          key,
-          round: "preflop",
-          timestamp,
-          action: "bigBlind",
-        },
-        callback: () => {},
-      });
-    }
+  if (smallBlindPlayer && data.smallBlind > 0) {
+    const key = `smallBlind-${smallBlindPlayer._id}-${timestamp}`;
+    animatedKeysRef.current.add(key); // Track the key
+    animationQueueRef.current.push({
+      type: "chipAction",
+      data: {
+        playerId: smallBlindPlayer._id,
+        seat: smallBlindPlayer.seat,
+        amount: data.smallBlind,
+        key,
+        round: "preflop",
+        timestamp,
+        action: "smallBlind",
+      },
+      callback: () => {},
+    });
+  }
+  if (bigBlindPlayer && data.bigBlind > 0) {
+    const key = `bigBlind-${bigBlindPlayer._id}-${timestamp}`;
+    animatedKeysRef.current.add(key); // Track the key
+    animationQueueRef.current.push({
+      type: "chipAction",
+      data: {
+        playerId: bigBlindPlayer._id,
+        seat: bigBlindPlayer.seat,
+        amount: data.bigBlind,
+        key,
+        round: "preflop",
+        timestamp,
+        action: "bigBlind",
+      },
+      callback: () => {},
+    });
+  }
 
     processAnimationQueue();
   };
@@ -1242,9 +1242,9 @@ export default function PokerTable() {
           : `${action}-${playerId}-${timestamp}-${Math.random()
               .toString(36)
               .substring(2, 8)}`;
-
-      // Check if an animation already exists for this player in the current round
+  
       setChipAnimations((prev) => {
+        // Check for existing animation for this player and round
         const existingAnimIndex = prev.findIndex(
           (anim) =>
             anim.playerId === playerId &&
@@ -1252,46 +1252,43 @@ export default function PokerTable() {
             !anim.isCollect &&
             !anim.isPotToWinner
         );
-
+  
         if (existingAnimIndex !== -1) {
-          // Merge the new amount with the existing animation
+          // Merge with existing animation
           const existingAnim = prev[existingAnimIndex];
           const newAmount = existingAnim.amount + amount;
           const chipUnit = 10000;
           const newChipCount = Math.min(Math.ceil(newAmount / chipUnit), 4);
-
-          // Update the existing animation
+  
+          // Update existing animation
           const updatedAnimations = [...prev];
           updatedAnimations[existingAnimIndex] = {
             ...existingAnim,
             amount: newAmount,
             chipCount: newChipCount,
             timestamp,
-            action, // Update action to the latest one
+            action,
+            key: uniqueKey, // Update key to ensure uniqueness
           };
-
-          // Trigger animation for the additional amount
+  
+          // Queue animation for the incremental amount
           animationQueueRef.current.push({
             type: "chipAction",
             data: {
               playerId,
               seat,
-              amount, // Animate only the new amount
+              amount, // Only animate the incremental amount
               key: uniqueKey,
               round,
               timestamp,
               action,
             },
-            callback: () => {
-              console.log(
-                `Chip action processed: playerId=${playerId}, key=${uniqueKey}, action=${action}`
-              );
-            },
+            callback: () => {},
           });
-
+  
           return updatedAnimations;
         }
-
+  
         // No existing animation, add a new one
         const chipUnit = 10000;
         const chipCount = Math.min(Math.ceil(amount / chipUnit), 4);
@@ -1306,13 +1303,9 @@ export default function PokerTable() {
             timestamp,
             action,
           },
-          callback: () => {
-            console.log(
-              `Chip action processed: playerId=${playerId}, key=${uniqueKey}, action=${action}`
-            );
-          },
+          callback: () => {},
         });
-
+  
         return [
           ...prev,
           {
@@ -1327,7 +1320,7 @@ export default function PokerTable() {
           },
         ];
       });
-
+  
       processAnimationQueue();
     }
   };
@@ -1429,7 +1422,6 @@ export default function PokerTable() {
       animationContainerRef.current?.getBoundingClientRect();
     if (!containerRect || !table) return null;
 
-    // Group chip animations by playerId and round to ensure one stack per player
     const mergedAnimations = chipAnimations.reduce((acc, anim) => {
       if (anim.isCollect || anim.isPotToWinner || !anim.x || !anim.y)
         return acc;

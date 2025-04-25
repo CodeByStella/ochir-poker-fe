@@ -72,7 +72,7 @@ const ButtonNav = memo(
 
     const calculateRaiseAmount = useCallback(
       (percentage: number) => {
-        const minRaise = table.currentBet + table.bigBlind;
+        const minRaise = table.pot + table.bigBlind;
         const maxRaise = currentPlayer.chips;
         let calculatedAmount = table.pot * (percentage / 100);
         calculatedAmount = Math.max(minRaise, calculatedAmount);
@@ -186,10 +186,17 @@ const ButtonNav = memo(
     // Wrapper for gameAction to hide buttons after action
     const handleGameAction = useCallback(
       (action: string, amount?: number) => {
+        if (action === "raise" && amount !== undefined) {
+          // console.log(`Raised amount: ${amount}`);
+        } else if (action === "call") {
+          const calledAmount = table.currentBet - currentPlayer.currentBet;
+          // console.log(`Called amount: ${calledAmount}`);
+        }
         gameAction(action, amount);
         setShowButtons(false);
+        setIsRaiseOpen(false);
       },
-      [gameAction],
+      [gameAction, table.currentBet, currentPlayer.currentBet],
     );
 
     return (
@@ -357,7 +364,7 @@ const ButtonNav = memo(
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0 }}
               transition={{ type: "tween", duration: 0.3 }}
-              className="fixed bottom-0 left-0 right-0 h-[65%] bg-gray-800/80 backdrop-blur-md p-4 flex flex-col justify-between items-center shadow-lg z-40 rounded-t-lg"
+              className="fixed bottom-0 left-0 right-0 h-[80%] bg-gray-800/80 backdrop-blur-md p-4 flex flex-col justify-between items-center shadow-lg z-40 rounded-t-lg"
             >
               <div className="flex flex-col items-center w-full gap-2">
                 {/* Smaller Input Field */}
