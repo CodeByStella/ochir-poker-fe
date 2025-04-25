@@ -133,14 +133,61 @@ export default function PokerTable() {
   );
   const isAdmin = currentUser?.role === "admin";
 
-  const shuffleSound = useMemo(() => new Audio("/mp3/shuffle.mp3"), []);
-  const foldSound = useMemo(() => new Audio("/mp3/fold.mp3"), []);
-  const potSound = useMemo(() => new Audio("/mp3/pot.mp3"), []);
-  const chipSound = useMemo(() => new Audio("/mp3/chip.mp3"), []);
-  const flipSound = useMemo(() => new Audio("/mp3/flip.mp3"), []);
-  const checkSound = useMemo(() => new Audio("/mp3/check.mp3"), []);
-  const callSound = useMemo(() => new Audio("/mp3/call.mp3"), []);
-  const raiseSound = useMemo(() => new Audio("/mp3/raise.mp3"), []);
+  const shuffleSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/shuffle.mp3");
+    }
+    return null;
+  }, []);
+  
+  const foldSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/fold.mp3");
+    }
+    return null;
+  }, []);
+  
+  const potSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/pot.mp3");
+    }
+    return null;
+  }, []);
+  
+  const chipSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/chip.mp3");
+    }
+    return null;
+  }, []);
+  
+  const flipSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/flip.mp3");
+    }
+    return null;
+  }, []);
+  
+  const checkSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/check.mp3");
+    }
+    return null;
+  }, []);
+  
+  const callSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/call.mp3");
+    }
+    return null;
+  }, []);
+  
+  const raiseSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/raise.mp3");
+    }
+    return null;
+  }, []);
 
   const getCardImagePath = (card: string) => {
     const suit = card.slice(-1);
@@ -272,7 +319,7 @@ export default function PokerTable() {
 
           setTimeout(() => {
             flipSound
-              .play()
+              ?.play()
               .catch((err) => console.error("Error playing flip sound:", err));
           }, totalTime - dealStep);
         });
@@ -412,7 +459,7 @@ export default function PokerTable() {
         ease: "power2.inOut",
         onStart: () => {
           flipSound
-            .play()
+            ?.play()
             .catch((err) => console.error("Error playing flip sound:", err));
         },
       },
@@ -606,7 +653,7 @@ export default function PokerTable() {
             : undefined,
           onStart: () => {
             chipSound
-              .play()
+              ?.play()
               .catch((err) => console.error("Error playing chip sound:", err));
           },
           onComplete: () => {
@@ -781,7 +828,7 @@ export default function PokerTable() {
       }, CHIP_ANIMATION_DURATION);
     } else if (item.type === "potToWinner") {
       const data = item.data as IPotToWinnerData & { timestamp: string };
-      potSound.play().catch(console.error);
+      potSound?.play().catch(console.error);
 
       setChipAnimations((prev) => prev.filter((anim) => anim.isPotToWinner));
       setMergedChips([]);
@@ -1005,7 +1052,7 @@ export default function PokerTable() {
     }
   };
   const handleGameStarted = (data: ITable) => {
-    shuffleSound.play().catch(console.error);
+    shuffleSound?.play().catch(console.error);
     setTable(data);
     updateAdminPreviewCards(data);
     setShowCommunityCards(false);
@@ -1145,7 +1192,7 @@ export default function PokerTable() {
   };
 
   const handleHandResult = (data: IHandResult) => {
-    potSound.play().catch(console.error);
+    potSound?.play().catch(console.error);
     setPendingWinners(data.winners);
     setPendingShowdownPlayers(data.showdownPlayers);
     setLastActions(new Map());
@@ -1226,7 +1273,7 @@ export default function PokerTable() {
       );
       return { ...prev, players: updatedPlayers };
     });
-    chipSound.play().catch(console.error);
+    chipSound?.play().catch(console.error);
     toastMessage.success(`${amount}₮ нэмэгдлээ`);
   };
 
@@ -1335,7 +1382,7 @@ export default function PokerTable() {
   };
   const handlePotToWinner = (data: IPotToWinnerData) => {
     if (data.tableId !== tableId) return;
-    potSound.play().catch(console.error);
+    potSound?.play().catch(console.error);
   
     // Clear existing chip animations
     setChipAnimations([]);
@@ -1673,30 +1720,30 @@ export default function PokerTable() {
     switch (action) {
       case "fold":
         foldSound
-          .play()
+          ?.play()
           .catch((err) => console.error("Error playing fold sound:", err));
         break;
       case "check":
         checkSound
-          .play()
+          ?.play()
           .catch((err) => console.error("Error playing check sound:", err));
         break;
       case "call":
         betAmount = table.currentBet - currentPlayer.currentBet;
         callSound
-          .play()
+          ?.play()
           .catch((err) => console.error("Error playing call sound:", err));
         break;
       case "raise":
         betAmount = amount || raiseAmount;
         raiseSound
-          .play()
+          ?.play()
           .catch((err) => console.error("Error playing raise sound:", err));
         break;
       case "allin":
         betAmount = currentPlayer.chips;
         raiseSound
-          .play()
+          ?.play()
           .catch((err) => console.error("Error playing raise sound:", err));
         break;
     }
