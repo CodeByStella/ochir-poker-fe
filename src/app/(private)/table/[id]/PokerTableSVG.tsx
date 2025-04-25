@@ -489,7 +489,7 @@ export const PokerTableSVG = memo(
       const centerY = 267;
       const communityCardsX = centerX - totalWidth / 2;
       const communityCardsY = centerY - 50;
-
+    
       const adminCardWidth = 35;
       const adminCardHeight = 50;
       const adminTotalWidth =
@@ -497,10 +497,10 @@ export const PokerTableSVG = memo(
         (adminPreviewCards.length - 1) * 5;
       const adminCardsX = centerX - adminTotalWidth / 2 - 50;
       const adminCardsY = communityCardsY + cardHeight - 160;
-
+    
       const turnCircleRadius = seatSize / 2 + 5;
       const turnCircleCircumference = 2 * Math.PI * turnCircleRadius;
-
+    
       return (
         <svg
           width="100vw"
@@ -509,20 +509,37 @@ export const PokerTableSVG = memo(
           preserveAspectRatio="xMidYMin meet"
           className="max-w-full max-h-full"
         >
+          <defs>
+            <filter id="grayscale">
+              <feColorMatrix
+                type="matrix"
+                values="0.33 0.33 0.33 0 0
+                        0.33 0.33 0.33 0 0
+                        0.33 0.33 0.33 0 0
+                        0 0 0 1 0"
+              />
+            </filter>
+          </defs>
           <style>
             {`
             .winner-highlight { animation: pulse 1.5s infinite ease-in-out; }
             .winner-text { animation: fadeInUp 0.5s ease-out; }
             .turn-circle { 
               stroke-dasharray: ${turnCircleCircumference}; 
-              stroke-dashoffset: ${
-                (1 - timeLeft / 20) * turnCircleCircumference
-              }; 
+              stroke-dashoffset: ${(1 - timeLeft / 20) * turnCircleCircumference}; 
               transform: rotate(-90deg);
               transform-origin: center;
               transition: stroke-dashoffset 1s linear;
             }
-            .card-highlight { filter: drop-shadow(0 0 5px #facc15); }
+            .card-winning { 
+              animation: sparkle 2s ease-in-out infinite, lift 1.5s ease-in-out infinite, borderGlow 1.5s ease-in-out infinite;
+              transform-origin: center;
+              z-index: 10;
+            }
+            .card-non-winning {
+              filter: url(#grayscale);
+              opacity: 0.7;
+            }
             @keyframes pulse {
               0% { stroke-opacity: 0.3; r: ${seatSize / 2}; }
               50% { stroke-opacity: 0.8; r: ${seatSize / 2 + 10}; }
@@ -532,16 +549,21 @@ export const PokerTableSVG = memo(
               from { opacity: 0; transform: translateY(10px); }
               to { opacity: 1; transform: translateY(0); }
             }
-            @keyframes rotate {
-              from { transform: rotate(0deg); }
-              to { transform: rotate(360deg); }
+            @keyframes sparkle {
+              0%, 100% { filter: drop-shadow(0 0 2px #ffffff); }
+              50% { filter: drop-shadow(0 0 6px #ffd700); }
             }
-            @keyframes dashCountdown {
-              from { stroke-dashoffset: 0; }
-              to { stroke-dashoffset: -100; }
+            @keyframes lift {
+              0%, 100% { transform: translateY(0); }
+              50% { transform: translateY(-5px); }
+            }
+            @keyframes borderGlow {
+              0%, 100% { stroke: #ffd700; stroke-opacity: 0.5; stroke-width: 2; }
+              50% { stroke: #ffd700; stroke-opacity: 1; stroke-width: 2; }
             }
           `}
           </style>
+          {/* Table SVG paths (unchanged) */}
           <svg>
             <path
               d="M276.6,510h474.2C886.4,510,1001.2,405.5,1001.2,267.5S890,25,768.6,25c-64.2,0-97.9,5.2-142.5,10.4 c-40.1,4.6-62.4,8.9-112.4,9.4c-49.9-0.5-87.9-4.9-128-9.4c-44.6-5.1-62.5-10.4-126.9-10.4C137.5,25,26.2,129.5,26.2,267.5S138.6,510,276.6,510 z"
@@ -584,15 +606,6 @@ export const PokerTableSVG = memo(
               opacity=".1"
               fill="#fff"
             />
-            {/* <foreignObject x="310.7" y="50.5" width="400" height="400">
-              <Image
-                src={SiteLogo}
-                alt="Site Logo"
-                width={400}
-                height={400}
-                style={{ objectFit: "contain" }}
-              />
-            </foreignObject> */}
             <text
               x="513.7"
               y="380.5"
@@ -604,7 +617,7 @@ export const PokerTableSVG = memo(
               {table.name} Stakes: {table.smallBlind}/{table.bigBlind}
             </text>
           </svg>
-
+    
           <foreignObject x="462" y="350" width="100" height="100">
             <div
               style={{
@@ -620,7 +633,7 @@ export const PokerTableSVG = memo(
               </div>
             </div>
           </foreignObject>
-
+    
           {showCommunityCards && !isDealing && (
             <g>
               {winners.length > 0 && winners[0]?.handDescription && (
@@ -629,9 +642,10 @@ export const PokerTableSVG = memo(
                     x={communityCardsX + totalWidth / 2}
                     y={communityCardsY - 40}
                     textAnchor="middle"
-                    fill="#facc15"
+                    fill="#ffd700"
                     fontSize={fontSizeMultiplier * 14}
                     fontWeight="bold"
+                    className="winner-text"
                   >
                     {winners[0].handDescription}
                   </text>
@@ -639,12 +653,12 @@ export const PokerTableSVG = memo(
                     x={communityCardsX + totalWidth / 2}
                     y={communityCardsY - 20}
                     textAnchor="middle"
-                    fill="#facc15"
+                    fill="#ffd700"
                     fontSize={fontSizeMultiplier * 12}
                     fontWeight="bold"
+                    className="winner-text"
                   >
-                    Won:{" "}
-                    {winners.reduce((sum, w) => sum + w.chipsWon, 0).toFixed(2)}
+                    Won: {winners.reduce((sum, w) => sum + w.chipsWon, 0).toFixed(2)}
                   </text>
                 </>
               )}
@@ -663,24 +677,28 @@ export const PokerTableSVG = memo(
                 const gap = isMobile ? 40 : 10;
                 return (
                   <g key={`community-${index}`}>
+                    <rect
+                      x={communityCardsX + index * (cardWidth + gap)}
+                      y={communityCardsY}
+                      width={cardWidth * 1.5}
+                      height={cardHeight * 1.5}
+                      fill="none"
+                      stroke={isWinningCard && winners.length > 0 ? "#ffd700" : "none"}
+                      className={isWinningCard && winners.length > 0 ? "card-winning" : ""}
+                    />
                     <image
-                      x={
-                        isMobile
-                          ? communityCardsX + index * (cardWidth + gap) - 120
-                          : communityCardsX + index * (cardWidth + gap)
-                      }
-                      y={isMobile ? communityCardsY + 70 : communityCardsY}
-                      width={isMobile ? cardWidth + 60 : cardWidth * 1.5}
-                      height={isMobile ? cardHeight + 60 : cardHeight * 1.5}
+                      x={communityCardsX + index * (cardWidth + gap)}
+                      y={communityCardsY}
+                      width={cardWidth * 1.5}
+                      height={cardHeight * 1.5}
                       href={getCardImagePath(card)}
                       preserveAspectRatio="xMidYMid meet"
                       className={
-                        isWinningCard && winners.length > 0
-                          ? "card-highlight"
+                        winners.length > 0
+                          ? isWinningCard
+                            ? "card-winning"
+                            : "card-non-winning"
                           : ""
-                      }
-                      opacity={
-                        winners.length > 0 ? (isWinningCard ? 1 : 0.5) : 1
                       }
                     />
                   </g>
@@ -734,66 +752,53 @@ export const PokerTableSVG = memo(
                 ? -(seatSize + 10)
                 : seatSize + 10
               : seatSize + 10;
-
+    
             return (
               <g
                 key={`seat-${seat.seatIndex}`}
                 className={`seat-${seat.seatIndex}`}
-                transform={`translate(${x - seatSize / 2}, ${
-                  y - seatSize / 2
-                })`}
+                transform={`translate(${x - seatSize / 2}, ${y - seatSize / 2})`}
               >
                 {seat.occupied && seat.player ? (
                   <>
-                    {isCurrentTurn &&
-                      inHand &&
-                      currentPlayer?.cards.length > 0 && (
-                        <circle
-                          cx={seatSize / 2}
-                          cy={seatSize / 2}
-                          r={turnCircleRadius}
-                          fill="none"
-                          stroke="#00ff00"
-                          strokeWidth="3"
-                          className="turn-circle"
-                          style={{
-                            transformOrigin: `${seatSize / 2}px ${
-                              seatSize / 2
-                            }px`,
-                          }}
-                        />
-                      )}
-                    {isCurrentTurn &&
-                      inHand &&
-                      currentPlayer?.cards.length > 0 && (
-                        <text
-                          x={seatSize / 2}
-                          y={-10}
-                          textAnchor="middle"
-                          fill="#00ff00"
-                          fontSize={fontSizeMultiplier * 14}
-                          fontWeight="bold"
-                        >
-                          {timeLeft}s
-                        </text>
-                      )}
+                    {isCurrentTurn && inHand && currentPlayer?.cards.length > 0 && (
+                      <circle
+                        cx={seatSize / 2}
+                        cy={seatSize / 2}
+                        r={turnCircleRadius}
+                        fill="none"
+                        stroke="#00ff00"
+                        strokeWidth="3"
+                        className="turn-circle"
+                        style={{
+                          transformOrigin: `${seatSize / 2}px ${seatSize / 2}px`,
+                        }}
+                      />
+                    )}
+                    {isCurrentTurn && inHand && currentPlayer?.cards.length > 0 && (
+                      <text
+                        x={seatSize / 2}
+                        y={-10}
+                        textAnchor="middle"
+                        fill="#00ff00"
+                        fontSize={fontSizeMultiplier * 14}
+                        fontWeight="bold"
+                      >
+                        {timeLeft}s
+                      </text>
+                    )}
                     {isWinner && (
                       <circle
                         cx={seatSize / 2}
                         cy={seatSize / 2}
                         r={seatSize / 2}
                         fill="none"
-                        stroke="#facc15"
+                        stroke="#ffd700"
                         strokeWidth="4"
                         className="winner-highlight"
                       />
                     )}
-                    <foreignObject
-                      x={0}
-                      y={0}
-                      width={seatSize}
-                      height={seatSize}
-                    >
+                    <foreignObject x={0} y={0} width={seatSize} height={seatSize}>
                       <div
                         style={{
                           width: `${seatSize}px`,
@@ -833,7 +838,6 @@ export const PokerTableSVG = memo(
                         </div>
                       </div>
                     </foreignObject>
-                    {/* Username and Chips Container */}
                     <foreignObject
                       x={-seatSize + 35}
                       y={seatSize}
@@ -874,40 +878,38 @@ export const PokerTableSVG = memo(
                         </span>
                       </div>
                     </foreignObject>
-                    {/* Last Action Overlay */}
-                    {lastAction &&
-                      (showCommunityCards || winners.length > 0) && (
-                        <foreignObject
-                          x={-seatSize + 35}
-                          y={seatSize - 20}
-                          width={seatSize * 2}
-                          height={30}
+                    {lastAction && (showCommunityCards || winners.length > 0) && (
+                      <foreignObject
+                        x={-seatSize + 35}
+                        y={seatSize - 20}
+                        width={seatSize * 2}
+                        height={30}
+                      >
+                        <div
+                          style={{
+                            backgroundColor: getActionBackgroundColor(
+                              lastAction.action
+                            ),
+                            borderRadius: "20px",
+                            padding: "4px 8px",
+                            textAlign: "center",
+                            opacity: inHand ? 1 : 0.5,
+                            zIndex: 10,
+                          }}
                         >
-                          <div
+                          <span
                             style={{
-                              backgroundColor: getActionBackgroundColor(
-                                lastAction.action
-                              ),
-                              borderRadius: "20px",
-                              padding: "4px 8px",
-                              textAlign: "center",
-                              opacity: inHand ? 1 : 0.5,
-                              zIndex: 10,
+                              display: "block",
+                              fontSize: `${fontSizeMultiplier * 12}px`,
+                              fontWeight: "bold",
+                              color: "#fff",
                             }}
                           >
-                            <span
-                              style={{
-                                display: "block",
-                                fontSize: `${fontSizeMultiplier * 12}px`,
-                                fontWeight: "bold",
-                                color: "#fff",
-                              }}
-                            >
-                              {formatActionText(lastAction)}
-                            </span>
-                          </div>
-                        </foreignObject>
-                      )}
+                            {formatActionText(lastAction)}
+                          </span>
+                        </div>
+                      </foreignObject>
+                    )}
                     {isDealer && table.status === "playing" && (
                       <image
                         x={dealerXOffset}
@@ -931,9 +933,7 @@ export const PokerTableSVG = memo(
                       className={
                         isUserSeated ? "" : "cursor-pointer hover:fill-gray-600"
                       }
-                      onClick={() =>
-                        !isUserSeated && onSeatClick(seat.seatIndex)
-                      }
+                      onClick={() => !isUserSeated && onSeatClick(seat.seatIndex)}
                     />
                     <text
                       x={seatSize / 2}
@@ -941,9 +941,7 @@ export const PokerTableSVG = memo(
                       textAnchor="middle"
                       fill="#fff"
                       fontSize={fontSizeMultiplier * 14}
-                      onClick={() =>
-                        !isUserSeated && onSeatClick(seat.seatIndex)
-                      }
+                      onClick={() => !isUserSeated && onSeatClick(seat.seatIndex)}
                       className="cursor-pointer hover:fill-gray-600"
                     >
                       СУУХ
@@ -953,7 +951,6 @@ export const PokerTableSVG = memo(
               </g>
             );
           })}
-
           {displayPositions.map((seat) => {
             const { x, y } = getSeatPosition(seat.seatIndex, cappedMaxPlayers);
             const showdownData =
@@ -961,8 +958,7 @@ export const PokerTableSVG = memo(
               showdownPlayers.find(
                 (sp) => sp.playerId === seat.player?._id.toString()
               );
-            const inHand =
-              seat.occupied && seat.player ? seat.player.inHand : true;
+            const inHand = seat.occupied && seat.player ? seat.player.inHand : true;
             const winnerData =
               seat.occupied &&
               winners.find((w) => w.playerId === seat.player?._id.toString());
@@ -977,7 +973,7 @@ export const PokerTableSVG = memo(
               : [];
             const isCurrentUser =
               seat.occupied && seat.player?.user === currentUserId;
-
+    
             if (
               seat.occupied &&
               seat.player &&
@@ -994,23 +990,44 @@ export const PokerTableSVG = memo(
               const cardsToShow = showdownData
                 ? showdownData.cards
                 : seat.player.cards;
-
+    
               const standardCardX = x < 512 ? x - 130 : x + seatSize - 30;
               const standardCardY = y - 30;
               const standardCardWidth = 50;
               const standardCardHeight = 65;
               const cardSpacing = 30;
-
+    
               const smallCardWidth = 40;
               const smallCardHeight = 52;
               const smallCardX = x < 512 ? x - 130 : x + seatSize - 30;
               const smallCardY = y - 30;
-
+    
               const overlayCardX = x - seatSize / 2;
               const overlayCardY = y - seatSize / 2;
-
+    
               return cardsToShow.map((card, idx) => (
                 <g key={`${seat.seatIndex}-card-${idx}`}>
+                  <rect
+                    x={
+                      isCurrentUser
+                        ? standardCardX + idx * cardSpacing
+                        : isCardOpen
+                        ? overlayCardX + idx * 20
+                        : smallCardX + idx * 20
+                    }
+                    y={
+                      isCurrentUser
+                        ? standardCardY
+                        : isCardOpen
+                        ? overlayCardY
+                        : smallCardY + (idx === 1 ? 10 : 0)
+                    }
+                    width={isCurrentUser || isCardOpen ? standardCardWidth : smallCardWidth}
+                    height={isCurrentUser || isCardOpen ? standardCardHeight : smallCardHeight}
+                    fill="none"
+                    stroke={winningCards.includes(card) && winners.length > 0 ? "#ffd700" : "none"}
+                    className={winningCards.includes(card) && winners.length > 0 ? "card-winning" : ""}
+                  />
                   <image
                     x={
                       isCurrentUser
@@ -1026,21 +1043,15 @@ export const PokerTableSVG = memo(
                         ? overlayCardY
                         : smallCardY + (idx === 1 ? 10 : 0)
                     }
-                    width={
-                      isCurrentUser || isCardOpen
-                        ? standardCardWidth
-                        : smallCardWidth
-                    }
-                    height={
-                      isCurrentUser || isCardOpen
-                        ? standardCardHeight
-                        : smallCardHeight
-                    }
+                    width={isCurrentUser || isCardOpen ? standardCardWidth : smallCardWidth}
+                    height={isCurrentUser || isCardOpen ? standardCardHeight : smallCardHeight}
                     href={isCardOpen ? getCardImagePath(card) : "/card.png"}
                     preserveAspectRatio="xMidYMid meet"
                     className={
-                      winningCards.includes(card) && winners.length > 0
-                        ? "card-highlight"
+                      winners.length > 0
+                        ? winningCards.includes(card)
+                          ? "card-winning"
+                          : "card-non-winning"
                         : ""
                     }
                   />
@@ -1065,7 +1076,7 @@ export const PokerTableSVG = memo(
       const centerY = 636;
       const communityCardsX = centerX - totalWidth / 2 - 50;
       const communityCardsY = centerY - cardHeight / 2 - 50;
-
+    
       const adminCardWidth = 40;
       const adminCardHeight = 56;
       const adminTotalWidth =
@@ -1073,10 +1084,10 @@ export const PokerTableSVG = memo(
         (adminPreviewCards.length - 1) * 10;
       const adminCardsX = centerX - adminTotalWidth / 2 - 50;
       const adminCardsY = communityCardsY + cardHeight + 150;
-
+    
       const turnCircleRadius = seatSize / 2 + 5;
       const turnCircleCircumference = 2 * Math.PI * turnCircleRadius;
-
+    
       return (
         <div
           style={{
@@ -1093,20 +1104,37 @@ export const PokerTableSVG = memo(
             viewBox="20 -130 800 1600"
             className="max-w-full max-h-full"
           >
+            <defs>
+              <filter id="grayscale">
+                <feColorMatrix
+                  type="matrix"
+                  values="0.33 0.33 0.33 0 0
+                          0.33 0.33 0.33 0 0
+                          0.33 0.33 0.33 0 0
+                          0 0 0 1 0"
+                />
+              </filter>
+            </defs>
             <style>
               {`
               .winner-highlight { animation: pulse 1.5s infinite ease-in-out; }
               .winner-text { animation: fadeInUp 0.5s ease-out; }
               .turn-circle { 
                 stroke-dasharray: ${turnCircleCircumference}; 
-                stroke-dashoffset: ${
-                  (1 - timeLeft / 20) * turnCircleCircumference
-                }; 
+                stroke-dashoffset: ${(1 - timeLeft / 20) * turnCircleCircumference}; 
                 transform: rotate(-90deg);
                 transform-origin: center;
                 transition: stroke-dashoffset 1s linear;
               }
-              .card-highlight { filter: drop-shadow(0 0 5px #facc15); }
+              .card-winning { 
+                animation: sparkle 2s ease-in-out infinite, lift 1.5s ease-in-out infinite, borderGlow 1.5s ease-in-out infinite;
+                transform-origin: center;
+                z-index: 10;
+              }
+              .card-non-winning {
+                filter: url(#grayscale);
+                opacity: 0.7;
+              }
               @keyframes pulse {
                 0% { stroke-opacity: 0.3; r: ${seatSize / 2}; }
                 50% { stroke-opacity: 0.8; r: ${seatSize / 2 + 10}; }
@@ -1116,17 +1144,20 @@ export const PokerTableSVG = memo(
                 from { opacity: 0; transform: translateY(10px); }
                 to { opacity: 1; transform: translateY(0); }
               }
-              @keyframes rotate {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
+              @keyframes sparkle {
+                0%, 100% { filter: drop-shadow(0 0 2px #ffffff); }
+                50% { filter: drop-shadow(0 0 8px #ffd700); }
               }
-              @keyframes dashCountdown {
-                from { stroke-dashoffset: 0; }
-                to { stroke-dashoffset: -100; }
+              @keyframes lift {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-8px); }
+              }
+              @keyframes borderGlow {
+                0%, 100% { stroke: #ffd700; stroke-opacity: 0.5; stroke-width: 2; }
+                50% { stroke: #ffd700; stroke-opacity: 1; stroke-width: 2; }
               }
             `}
             </style>
-
             <svg>
               <path
                 d="M420,1218c-215.4,0-384-147.3-384-328.35l0-1.05l35.4-609.9l0-0.9c0.45-66.6,32.55-119.7,103.65-172.5 C240.9,56.7,327.75,30,420,30c92.25,0,179.1,26.7,244.8,75.3c71.25,52.65,103.2,105.9,103.8,172.5l0,0.9L804,888.9l0,0.6 C804,1070.55,635.4,1218,420,1218z"
@@ -1177,15 +1208,6 @@ export const PokerTableSVG = memo(
                 clipRule="evenodd"
                 fill="#fff"
               />
-              {/* <foreignObject x="270" y="474" width="300" height="300">
-                <Image
-                  src={SiteLogo}
-                  alt="Site Logo"
-                  width={300}
-                  height={300}
-                  style={{ objectFit: "contain" }}
-                />
-              </foreignObject> */}
               <text
                 x="420"
                 y="800"
@@ -1212,7 +1234,7 @@ export const PokerTableSVG = memo(
                 </div>
               </div>
             </foreignObject>
-
+    
             {showCommunityCards && !isDealing && (
               <g>
                 {winners.length > 0 && winners[0]?.handDescription && (
@@ -1221,9 +1243,10 @@ export const PokerTableSVG = memo(
                       x={communityCardsX + totalWidth / 2}
                       y={communityCardsY - 40}
                       textAnchor="middle"
-                      fill="#facc15"
+                      fill="#ffd700"
                       fontSize={fontSizeMultiplier * 14}
                       fontWeight="bold"
+                      className="winner-text"
                     >
                       {winners[0].handDescription}
                     </text>
@@ -1231,14 +1254,12 @@ export const PokerTableSVG = memo(
                       x={communityCardsX + totalWidth / 2}
                       y={communityCardsY - 20}
                       textAnchor="middle"
-                      fill="#facc15"
+                      fill="#ffd700"
                       fontSize={fontSizeMultiplier * 12}
                       fontWeight="bold"
+                      className="winner-text"
                     >
-                      Won:{" "}
-                      {winners
-                        .reduce((sum, w) => sum + w.chipsWon, 0)
-                        .toFixed(2)}
+                      Won: {winners.reduce((sum, w) => sum + w.chipsWon, 0).toFixed(2)}
                     </text>
                   </>
                 )}
@@ -1254,27 +1275,30 @@ export const PokerTableSVG = memo(
                     );
                     return winningCards.includes(card);
                   });
-                  const gap = isMobile ? 40 : 10;
                   return (
                     <g key={`community-${index}`}>
+                      <rect
+                        x={communityCardsX + index * (cardWidth + 40) - 120}
+                        y={communityCardsY + 70}
+                        width={cardWidth + 60}
+                        height={cardHeight + 60}
+                        fill="none"
+                        stroke={isWinningCard && winners.length > 0 ? "#ffd700" : "none"}
+                        className={isWinningCard && winners.length > 0 ? "card-winning" : ""}
+                      />
                       <image
-                        x={
-                          isMobile
-                            ? communityCardsX + index * (cardWidth + gap) - 120
-                            : communityCardsX + index * (cardWidth + gap)
-                        }
-                        y={isMobile ? communityCardsY + 70 : communityCardsY}
-                        width={isMobile ? cardWidth + 60 : cardWidth * 1.5}
-                        height={isMobile ? cardHeight + 60 : cardHeight * 1.5}
+                        x={communityCardsX + index * (cardWidth + 40) - 120}
+                        y={communityCardsY + 70}
+                        width={cardWidth + 60}
+                        height={cardHeight + 60}
                         href={getCardImagePath(card)}
                         preserveAspectRatio="xMidYMid meet"
                         className={
-                          isWinningCard && winners.length > 0
-                            ? "card-highlight"
+                          winners.length > 0
+                            ? isWinningCard
+                              ? "card-winning"
+                              : "card-non-winning"
                             : ""
-                        }
-                        opacity={
-                          winners.length > 0 ? (isWinningCard ? 1 : 0.5) : 1
                         }
                       />
                     </g>
@@ -1304,19 +1328,13 @@ export const PokerTableSVG = memo(
                   })}
                 </g>
               )}
-
             {displayPositions.map((seat) => {
-              const { x, y } = getSeatPosition(
-                seat.seatIndex,
-                cappedMaxPlayers
-              );
+              const { x, y } = getSeatPosition(seat.seatIndex, cappedMaxPlayers);
               const isWinner =
                 seat.occupied &&
                 winners.some((w) => w.playerId === seat.player?._id.toString());
               const winnerData = isWinner
-                ? winners.find(
-                    (w) => w.playerId === seat.player?._id.toString()
-                  )
+                ? winners.find((w) => w.playerId === seat.player?._id.toString())
                 : null;
               const lastAction =
                 seat.occupied && seat.player
@@ -1337,66 +1355,53 @@ export const PokerTableSVG = memo(
                   ? -(seatSize + 10)
                   : seatSize + 20
                 : seatSize + 10;
-
+    
               return (
                 <g
                   key={`seat-${seat.seatIndex}`}
                   className={`seat-${seat.seatIndex}`}
-                  transform={`translate(${x - seatSize / 2}, ${
-                    y - seatSize / 2
-                  })`}
+                  transform={`translate(${x - seatSize / 2}, ${y - seatSize / 2})`}
                 >
                   {seat.occupied && seat.player ? (
                     <>
-                      {isCurrentTurn &&
-                        inHand &&
-                        currentPlayer?.cards.length > 0 && (
-                          <circle
-                            cx={seatSize / 2}
-                            cy={seatSize / 2}
-                            r={turnCircleRadius}
-                            fill="none"
-                            stroke="#00ff00"
-                            strokeWidth="3"
-                            className="turn-circle"
-                            style={{
-                              transformOrigin: `${seatSize / 2}px ${
-                                seatSize / 2
-                              }px`,
-                            }}
-                          />
-                        )}
-                      {isCurrentTurn &&
-                        inHand &&
-                        currentPlayer?.cards.length > 0 && (
-                          <text
-                            x={seatSize / 2}
-                            y={-10}
-                            textAnchor="middle"
-                            fill="#00ff00"
-                            fontSize={fontSizeMultiplier * 14}
-                            fontWeight="bold"
-                          >
-                            {timeLeft}s
-                          </text>
-                        )}
+                      {isCurrentTurn && inHand && currentPlayer?.cards.length > 0 && (
+                        <circle
+                          cx={seatSize / 2}
+                          cy={seatSize / 2}
+                          r={turnCircleRadius}
+                          fill="none"
+                          stroke="#00ff00"
+                          strokeWidth="3"
+                          className="turn-circle"
+                          style={{
+                            transformOrigin: `${seatSize / 2}px ${seatSize / 2}px`,
+                          }}
+                        />
+                      )}
+                      {isCurrentTurn && inHand && currentPlayer?.cards.length > 0 && (
+                        <text
+                          x={seatSize / 2}
+                          y={-10}
+                          textAnchor="middle"
+                          fill="#00ff00"
+                          fontSize={fontSizeMultiplier * 14}
+                          fontWeight="bold"
+                        >
+                          {timeLeft}s
+                        </text>
+                      )}
                       {isWinner && (
                         <circle
                           cx={seatSize / 2}
                           cy={seatSize / 2}
                           r={seatSize / 2}
                           fill="none"
-                          stroke="#facc15"
+                          stroke="#ffd700"
                           strokeWidth="4"
                           className="winner-highlight"
                         />
                       )}
-                      <foreignObject
-                        x={0}
-                        y={0}
-                        width={seatSize}
-                        height={seatSize}
-                      >
+                      <foreignObject x={0} y={0} width={seatSize} height={seatSize}>
                         <div
                           style={{
                             width: `${seatSize}px`,
@@ -1420,7 +1425,6 @@ export const PokerTableSVG = memo(
                           </div>
                         </div>
                       </foreignObject>
-                      {/* Username and Chips Container */}
                       <g>
                         <rect
                           x={-seatSize + 45}
@@ -1452,32 +1456,30 @@ export const PokerTableSVG = memo(
                           {seat.player.chips.toLocaleString()}
                         </text>
                       </g>
-                      {/* Last Action Overlay */}
-                      {lastAction &&
-                        (showCommunityCards || winners.length > 0) && (
-                          <g>
-                            <rect
-                              x={-seatSize + 80}
-                              y={seatSize - 30}
-                              width={seatSize * 1.5}
-                              height={30}
-                              rx={15}
-                              ry={15}
-                              fill={getActionBackgroundColor(lastAction.action)}
-                              opacity={inHand ? 1 : 0.5}
-                            />
-                            <text
-                              x={seatSize - 45}
-                              y={seatSize - 5}
-                              textAnchor="middle"
-                              fill="#fff"
-                              fontSize={fontSizeMultiplier * 12}
-                              fontWeight="bold"
-                            >
-                              {formatActionText(lastAction)}
-                            </text>
-                          </g>
-                        )}
+                      {lastAction && (showCommunityCards || winners.length > 0) && (
+                        <g>
+                          <rect
+                            x={-seatSize + 80}
+                            y={seatSize - 30}
+                            width={seatSize * 1.5}
+                            height={30}
+                            rx={15}
+                            ry={15}
+                            fill={getActionBackgroundColor(lastAction.action)}
+                            opacity={inHand ? 1 : 0.5}
+                          />
+                          <text
+                            x={seatSize - 45}
+                            y={seatSize - 5}
+                            textAnchor="middle"
+                            fill="#fff"
+                            fontSize={fontSizeMultiplier * 12}
+                            fontWeight="bold"
+                          >
+                            {formatActionText(lastAction)}
+                          </text>
+                        </g>
+                      )}
                       {isDealer && table.status === "playing" && (
                         <image
                           x={dealerXOffset + 20}
@@ -1499,13 +1501,9 @@ export const PokerTableSVG = memo(
                         stroke="#9CA3AF"
                         strokeWidth="2"
                         className={
-                          isUserSeated
-                            ? ""
-                            : "cursor-pointer hover:fill-gray-600"
+                          isUserSeated ? "" : "cursor-pointer hover:fill-gray-600"
                         }
-                        onClick={() =>
-                          !isUserSeated && onSeatClick(seat.seatIndex)
-                        }
+                        onClick={() => !isUserSeated && onSeatClick(seat.seatIndex)}
                       />
                       <text
                         x={seatSize / 2}
@@ -1513,9 +1511,7 @@ export const PokerTableSVG = memo(
                         textAnchor="middle"
                         fill="#fff"
                         fontSize={fontSizeMultiplier * 14}
-                        onClick={() =>
-                          !isUserSeated && onSeatClick(seat.seatIndex)
-                        }
+                        onClick={() => !isUserSeated && onSeatClick(seat.seatIndex)}
                         className="cursor-pointer hover:fill-gray-600"
                       >
                         СУУХ
@@ -1526,17 +1522,13 @@ export const PokerTableSVG = memo(
               );
             })}
             {displayPositions.map((seat) => {
-              const { x, y } = getSeatPosition(
-                seat.seatIndex,
-                cappedMaxPlayers
-              );
+              const { x, y } = getSeatPosition(seat.seatIndex, cappedMaxPlayers);
               const showdownData =
                 seat.occupied &&
                 showdownPlayers.find(
                   (sp) => sp.playerId === seat.player?._id.toString()
                 );
-              const inHand =
-                seat.occupied && seat.player ? seat.player.inHand : true;
+              const inHand = seat.occupied && seat.player ? seat.player.inHand : true;
               const winnerData =
                 seat.occupied &&
                 winners.find((w) => w.playerId === seat.player?._id.toString());
@@ -1551,7 +1543,7 @@ export const PokerTableSVG = memo(
                 : [];
               const isCurrentUser =
                 seat.occupied && seat.player?.user === currentUserId;
-
+    
               if (
                 seat.occupied &&
                 seat.player &&
@@ -1569,23 +1561,52 @@ export const PokerTableSVG = memo(
                   showdownData && showdownData.cards
                     ? showdownData.cards
                     : seat.player.cards;
-
+    
                 const standardCardX = x < 420 ? x + seatSize - 90 : x - 180;
                 const standardCardY = y - 70;
                 const standardCardWidth = 120;
                 const standardCardHeight = 100;
                 const cardSpacing = 60;
-
+    
                 const smallCardWidth = 80;
                 const smallCardHeight = 65;
                 const smallCardX = x < 420 ? x + seatSize - 80 : x - 100;
                 const smallCardY = y - 70;
-
+    
                 const overlayCardX = x - seatSize / 2 - 25;
                 const overlayCardY = y - seatSize / 2;
-
+    
                 return cardsToShow.map((card, idx) => (
                   <g key={`${seat.seatIndex}-card-${idx}`}>
+                    <rect
+                      x={
+                        isCurrentUser
+                          ? standardCardX + idx * cardSpacing
+                          : isCardOpen
+                          ? overlayCardX + idx * 30
+                          : smallCardX + idx * 20
+                      }
+                      y={
+                        isCurrentUser
+                          ? standardCardY
+                          : isCardOpen
+                          ? overlayCardY
+                          : smallCardY + (idx === 1 ? 10 : 0)
+                      }
+                      width={
+                        isCurrentUser || isCardOpen
+                          ? standardCardWidth
+                          : smallCardWidth
+                      }
+                      height={
+                        isCurrentUser || isCardOpen
+                          ? standardCardHeight
+                          : smallCardHeight
+                      }
+                      fill="none"
+                      stroke={winningCards.includes(card) && winners.length > 0 ? "#ffd700" : "none"}
+                      className={winningCards.includes(card) && winners.length > 0 ? "card-winning" : ""}
+                    />
                     <image
                       x={
                         isCurrentUser
@@ -1614,8 +1635,10 @@ export const PokerTableSVG = memo(
                       href={isCardOpen ? getCardImagePath(card) : "/card.png"}
                       preserveAspectRatio="xMidYMid meet"
                       className={
-                        winningCards.includes(card) && winners.length > 0
-                          ? "card-highlight"
+                        winners.length > 0
+                          ? winningCards.includes(card)
+                            ? "card-winning"
+                            : "card-non-winning"
                           : ""
                       }
                     />
