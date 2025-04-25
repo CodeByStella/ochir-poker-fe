@@ -1609,7 +1609,7 @@ export default function PokerTable() {
   });
 
   const { data: tableData, error: tableError } = useSWRSubscription(
-    tableId ? `table.${tableId}` : null,
+    tableId && socket && isConnected ? `table.${tableId}` : null,
     (key, { next }) => {
       if (!tableId || !socket) {
         next(new Error("Invalid table ID or socket not initialized"), null);
@@ -1625,11 +1625,6 @@ export default function PokerTable() {
       socket.on("tableData", handleTableData);
       socket.on("tableUpdate", handleTableData);
 
-      socket.on("connect", () => {
-        console.log("Socket.IO connected for SWR subscription");
-        socket.emit("joinTable", tableId);
-      });
-
       socket.on("connect_error", (err) => {
         console.error("Socket.IO connection error:", err);
         next(err, null);
@@ -1641,10 +1636,10 @@ export default function PokerTable() {
         next(new Error(msg), null);
       });
 
-      if (socket.connected) {
-        socket.emit("joinTable", tableId);
-      }
-
+      setTimeout (() => {
+          socket.emit("joinTable", { userId: currentUser?._id, tableId });
+      }, 2000);
+      
       return () => {
         socket.off("tableData", handleTableData);
         socket.off("tableUpdate", handleTableData);
@@ -1682,11 +1677,11 @@ export default function PokerTable() {
     }
   }, [table, tableData, updateAdminPreviewCards]);
 
-  useEffect(() => {
-    if (socket && isConnected && tableId) {
-      socket.emit("joinTable", tableId);
-    }
-  }, [socket, isConnected, tableId]);
+  // useEffect(() => {
+  //   if (socket && isConnected && tableId) {
+  //     socket.emit("joinTable", { tableId });
+  //   }
+  // }, [socket, isConnected, tableId]);
 
   const joinSeat = (seat: number, chips: number) => {
     if (!currentUser?._id) {
@@ -1823,7 +1818,7 @@ export default function PokerTable() {
             className="mt-4 px-4 py-2 bg-blue-500 rounded hover:bg-blue-600"
             onClick={() => {
               if (socket && tableId) {
-                socket.emit("joinTable", tableId);
+                socket.emit("joinTable", { tableId });
               }
             }}
           >
