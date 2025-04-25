@@ -313,8 +313,8 @@ export default function PokerTable() {
       cleanupAnimations();
       setIsAnimating(true);
 
-      const cardWidth = isMobile ? 60 : 80;
-      const cardHeight = isMobile ? 84 : 112;
+      const cardWidth = isMobile ? 60 : 30;
+      const cardHeight = isMobile ? 84 : 70;
       const gap = isMobile ? 10 : 15;
       const totalCards = round === "flop" ? 3 : round === "turn" ? 4 : 5;
       const totalWidth = totalCards * cardWidth + (totalCards - 1) * gap;
@@ -343,6 +343,7 @@ export default function PokerTable() {
       const viewBoxHeight = isMobile ? 1600 : 700;
       const scaleX = svgRect.width / viewBoxWidth;
       const scaleY = svgRect.height / viewBoxHeight;
+      
 
       const pixelTargetX =
         svgTargetX * scaleX + svgRect.left - containerRect.left;
@@ -359,69 +360,77 @@ export default function PokerTable() {
       container.appendChild(cardElement);
       animatedElementsRef.current.push(cardElement);
 
-      const tween = gsap.fromTo(
-        cardElement,
-        {
-          opacity: 0,
-          x: containerRect.width / 2,
-          y: containerRect.height / 2,
-          rotationY: 90,
-          scale: 0.5,
-        },
-        {
-          opacity: 1,
-          x: pixelTargetX,
-          y: pixelTargetY,
-          rotationY: 0,
-          scale: 1,
-          duration: 0.6,
-          ease: "power2.out",
+      const timeline = gsap.timeline({
+      onComplete: () => {
+        cleanupAnimations();
+        setIsAnimating(false);
+        setIsFlippingCommunityCards(false);
+        setFlipAnimationComplete(true);
+        callback?.();
 
-          onStart: () => {
-            flipSound
-              .play()
-              .catch((err) => console.error("Error playing flip sound:", err));
-          },
-          onUpdate: function () {
-            if (this.progress() >= 0.3) {
-              const frontImagePath = getCardImagePath(card) || "/card.png";
-              cardElement.innerHTML = `<img src="${frontImagePath}" alt="Card" style="width: 100%; height: 100%;" />`;
-            }
-          },
-          onComplete: () => {
-            cleanupAnimations();
-            setIsAnimating(false);
-            setIsFlippingCommunityCards(false);
-            setFlipAnimationComplete(true);
-            callback?.();
-
-            if (
-              isAllIn &&
-              round === "showdown" &&
-              winnerCallback &&
-              pendingWinners.length > 0
-            ) {
-              setTimeout(() => {
-                winnerCallback(pendingWinners, pendingShowdownPlayers);
-              }, ALL_IN_SHOWDOWN_DELAY);
-            }
-
-            processAnimationQueue();
-          },
+        if (
+          isAllIn &&
+          round === "showdown" &&
+          winnerCallback &&
+          pendingWinners.length > 0
+        ) {
+          setTimeout(() => {
+            winnerCallback(pendingWinners, pendingShowdownPlayers);
+          }, ALL_IN_SHOWDOWN_DELAY);
         }
-      );
-      gsapAnimationsRef.current.push(tween);
-    },
-    [
-      flipSound,
-      isMobile,
-      table,
-      isAllIn,
-      pendingWinners,
-      pendingShowdownPlayers,
-      cleanupAnimations,
-    ]
-  );
+
+        processAnimationQueue();
+      },
+    });
+
+    // Initial state (start from the "deck" position, back-facing)
+    gsap.set(cardElement, {
+      x: pixelTargetX,
+      y: pixelTargetY,
+      scale: 0.5,
+      opacity: 0,
+      rotationY: 90,
+      transformOrigin: "center center",
+    });
+
+    // Deal animation (move from deck to target position)
+    timeline.to(cardElement, {
+      x: pixelTargetX,
+      y: pixelTargetY,
+      scale: 1,
+      opacity: 1,
+      duration: 0.5,
+      ease: "power2.out",
+    });
+
+    // Flip animation (reveal the front)
+    timeline.to(
+      cardElement,
+      {
+        rotationY: 0,
+        duration: 0.6,
+        ease: "power2.inOut",
+        onStart: () => {
+          flipSound
+            .play()
+            .catch((err) => console.error("Error playing flip sound:", err));
+        },
+      },
+      "+=0.1"
+    );
+
+    gsapAnimationsRef.current.push(timeline);
+  },
+  [
+    flipSound,
+    isMobile,
+    table,
+    isAllIn,
+    pendingWinners,
+    pendingShowdownPlayers,
+    cleanupAnimations,
+  ]
+);
 
   const getChipSvg = (index: number, amount: number) => {
     const chipSvgs = [
