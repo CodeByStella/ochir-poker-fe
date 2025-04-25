@@ -3,7 +3,6 @@ import { AvatarLogo } from "@/components/icons/avatar";
 import { IPlayer } from "@/models/player";
 import { ITable } from "@/models/table";
 
-
 interface PokerTableSVGProps {
   scale: number;
   pot: number;
@@ -24,7 +23,7 @@ interface PokerTableSVGProps {
   table: ITable;
   getVisibleCardCount?: (round: string, totalCards: number) => number;
   isMobile?: boolean;
-  adminPreviewCards?: string[]; 
+  adminPreviewCards?: string[];
   dealAnimationComplete?: boolean;
   isFlippingCommunityCards?: boolean;
   flipAnimationComplete?: boolean;
@@ -43,7 +42,7 @@ interface PlayerAction {
 const getWinningCards = (
   handDescription: string | undefined,
   playerCards: string[],
-  communityCards: string[],
+  communityCards: string[]
 ): string[] => {
   if (!handDescription || playerCards.length !== 2 || communityCards.length > 5)
     return [];
@@ -61,22 +60,16 @@ const getWinningCards = (
   });
 
   // Rank counts for pairs, three of a kind, etc.
-  const rankCounts = ranks.reduce(
-    (acc, rank) => {
-      acc[rank] = (acc[rank] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
+  const rankCounts = ranks.reduce((acc, rank) => {
+    acc[rank] = (acc[rank] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   // Suit counts for flush
-  const suitCounts = suits.reduce(
-    (acc, suit) => {
-      acc[suit] = (acc[suit] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
+  const suitCounts = suits.reduce((acc, suit) => {
+    acc[suit] = (acc[suit] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   // Helper to sort cards by rank value (high to low)
   const sortByRank = (cards: string[]) =>
@@ -115,7 +108,7 @@ const getWinningCards = (
 
   // Parse the hand description for detailed cases like "High Card A with K, T, 4 kicker"
   const handMatch = handDescription.match(
-    /^(.*?)(?: \((.*?)\))?(?: with (.*?) kicker)?$/,
+    /^(.*?)(?: \((.*?)\))?(?: with (.*?) kicker)?$/
   );
   if (!handMatch) return [];
 
@@ -126,30 +119,30 @@ const getWinningCards = (
   switch (handType) {
     case "Royal Flush": {
       const flushSuit = Object.keys(suitCounts).find(
-        (suit) => suitCounts[suit] >= 5,
+        (suit) => suitCounts[suit] >= 5
       )!;
       const flushCards = allCards.filter((card) => card.endsWith(flushSuit));
       const royalRanks = ["A", "K", "Q", "J", "T"];
       if (
         royalRanks.every((rank) =>
-          flushCards.some((card) => card.startsWith(rank)),
+          flushCards.some((card) => card.startsWith(rank))
         )
       ) {
         winningCards = flushCards.filter((card) =>
-          royalRanks.includes(card.slice(0, -1)),
+          royalRanks.includes(card.slice(0, -1))
         );
       }
       break;
     }
     case "Straight Flush": {
       const flushSuit = Object.keys(suitCounts).find(
-        (suit) => suitCounts[suit] >= 5,
+        (suit) => suitCounts[suit] >= 5
       )!;
       const flushCards = sortByRank(
-        allCards.filter((card) => card.endsWith(flushSuit)),
+        allCards.filter((card) => card.endsWith(flushSuit))
       );
       const flushValues = flushCards.map(
-        (card) => rankValues[ranks.indexOf(card.slice(0, -1))],
+        (card) => rankValues[ranks.indexOf(card.slice(0, -1))]
       );
       const straight = findStraight(flushValues);
       if (straight) {
@@ -162,7 +155,7 @@ const getWinningCards = (
     }
     case "Four of a Kind": {
       const fourRank = Object.keys(rankCounts).find(
-        (rank) => rankCounts[rank] === 4,
+        (rank) => rankCounts[rank] === 4
       )!;
       winningCards = allCards.filter((card) => card.startsWith(fourRank));
       winningCards = winningCards.concat(getKickers(winningCards, 1));
@@ -170,10 +163,10 @@ const getWinningCards = (
     }
     case "Full House": {
       const threeRank = Object.keys(rankCounts).find(
-        (rank) => rankCounts[rank] === 3,
+        (rank) => rankCounts[rank] === 3
       )!;
       const pairRank = Object.keys(rankCounts).find(
-        (rank) => rankCounts[rank] >= 2 && rank !== threeRank,
+        (rank) => rankCounts[rank] >= 2 && rank !== threeRank
       )!;
       const threes = allCards
         .filter((card) => card.startsWith(threeRank))
@@ -186,10 +179,10 @@ const getWinningCards = (
     }
     case "Flush": {
       const flushSuit = Object.keys(suitCounts).find(
-        (suit) => suitCounts[suit] >= 5,
+        (suit) => suitCounts[suit] >= 5
       )!;
       winningCards = sortByRank(
-        allCards.filter((card) => card.endsWith(flushSuit)),
+        allCards.filter((card) => card.endsWith(flushSuit))
       ).slice(0, 5);
       break;
     }
@@ -207,7 +200,7 @@ const getWinningCards = (
     }
     case "Three of a Kind": {
       const threeRank = Object.keys(rankCounts).find(
-        (rank) => rankCounts[rank] === 3,
+        (rank) => rankCounts[rank] === 3
       )!;
       winningCards = allCards.filter((card) => card.startsWith(threeRank));
       winningCards = winningCards.concat(getKickers(winningCards, 2));
@@ -220,7 +213,7 @@ const getWinningCards = (
           .filter((rank) => rankCounts[rank] === 2)
           .sort(
             (a, b) =>
-              rankValues[ranks.indexOf(b)] - rankValues[ranks.indexOf(a)],
+              rankValues[ranks.indexOf(b)] - rankValues[ranks.indexOf(a)]
           )[0];
       const pairRank2 =
         handDetails[1]?.replace("s", "") ||
@@ -228,7 +221,7 @@ const getWinningCards = (
           .filter((rank) => rankCounts[rank] === 2)
           .sort(
             (a, b) =>
-              rankValues[ranks.indexOf(b)] - rankValues[ranks.indexOf(a)],
+              rankValues[ranks.indexOf(b)] - rankValues[ranks.indexOf(a)]
           )[1];
 
       const pairs1 = allCards
@@ -266,19 +259,19 @@ const getWinningCards = (
       if (highCardRank) {
         // Get all cards with the high card rank (e.g., all Aces)
         const highCards = allCards.filter((card) =>
-          card.startsWith(highCardRank),
+          card.startsWith(highCardRank)
         );
         // Take up to 2 Aces (in case there are multiple, like Ah and As)
         winningCards = highCards.slice(0, 2);
 
         // Get the kicker cards
         const remainingCards = allCards.filter(
-          (card) => !winningCards.includes(card),
+          (card) => !winningCards.includes(card)
         );
         const kickerCards: string[] = [];
         for (const kickerRank of kickerRanks) {
           const kickerCard = remainingCards.find((card) =>
-            card.startsWith(kickerRank),
+            card.startsWith(kickerRank)
           );
           if (kickerCard) {
             kickerCards.push(kickerCard);
@@ -292,7 +285,7 @@ const getWinningCards = (
         if (winningCards.length < 5) {
           const additionalKickers = getKickers(
             winningCards,
-            5 - winningCards.length,
+            5 - winningCards.length
           );
           winningCards = [...winningCards, ...additionalKickers];
         }
@@ -428,7 +421,7 @@ export const PokerTableSVG = memo(
         seatIndex: index,
         occupied: false,
         player: null as IPlayer | null,
-      }),
+      })
     );
 
     players.forEach((player) => {
@@ -475,7 +468,7 @@ export const PokerTableSVG = memo(
           style={{ opacity: inHand ? 1 : 0.5 }}
         />
       ),
-      [seatSize],
+      [seatSize]
     );
 
     const isSeatOnLeft = (seatIndex: number, totalSeats: number) => {
@@ -487,10 +480,10 @@ export const PokerTableSVG = memo(
       const cardWidth = 50;
       const cardHeight = 65;
       const totalCards = table
-      ? getVisibleCardCount
-        ? getVisibleCardCount(table.round, table.communityCards.length)
-        : 0
-      : 0;
+        ? getVisibleCardCount
+          ? getVisibleCardCount(table.round, table.communityCards.length)
+          : 0
+        : 0;
       const totalWidth = totalCards * cardWidth + (totalCards - 1) * 5;
       const centerX = 512;
       const centerY = 267;
@@ -502,8 +495,8 @@ export const PokerTableSVG = memo(
       const adminTotalWidth =
         adminPreviewCards.length * adminCardWidth +
         (adminPreviewCards.length - 1) * 5;
-        const adminCardsX = centerX - adminTotalWidth / 2 - 50;
-        const adminCardsY = communityCardsY + cardHeight - 160;
+      const adminCardsX = centerX - adminTotalWidth / 2 - 50;
+      const adminCardsY = communityCardsY + cardHeight - 160;
 
       const turnCircleRadius = seatSize / 2 + 5;
       const turnCircleCircumference = 2 * Math.PI * turnCircleRadius;
@@ -522,7 +515,9 @@ export const PokerTableSVG = memo(
             .winner-text { animation: fadeInUp 0.5s ease-out; }
             .turn-circle { 
               stroke-dasharray: ${turnCircleCircumference}; 
-              stroke-dashoffset: ${(1 - timeLeft / 20) * turnCircleCircumference}; 
+              stroke-dashoffset: ${
+                (1 - timeLeft / 20) * turnCircleCircumference
+              }; 
               transform: rotate(-90deg);
               transform-origin: center;
               transition: stroke-dashoffset 1s linear;
@@ -602,7 +597,6 @@ export const PokerTableSVG = memo(
               x="513.7"
               y="380.5"
               textAnchor="middle"
-              
               fill="#BEBEBE"
               fontWeight="Bold"
               fontSize={"24"}
@@ -622,67 +616,78 @@ export const PokerTableSVG = memo(
               }}
             >
               <div className="text-white font-bold">
-                  Пот: {pot.toLocaleString()}
-                </div>
+                Пот: {pot.toLocaleString()}
+              </div>
             </div>
           </foreignObject>
 
           {showCommunityCards && !isDealing && (
-  <g>
-    {winners.length > 0 && winners[0]?.handDescription && (
-      <>
-        <text
-          x={communityCardsX + totalWidth / 2}
-          y={communityCardsY - 40}
-          textAnchor="middle"
-          fill="#facc15"
-          fontSize={fontSizeMultiplier * 14}
-          fontWeight="bold"
-        >
-          {winners[0].handDescription}
-        </text>
-        <text
-          x={communityCardsX + totalWidth / 2}
-          y={communityCardsY - 20}
-          textAnchor="middle"
-          fill="#facc15"
-          fontSize={fontSizeMultiplier * 12}
-          fontWeight="bold"
-        >
-          Won: {winners.reduce((sum, w) => sum + w.chipsWon, 0).toFixed(2)}
-        </text>
-      </>
-    )}
-    {table.communityCards.map((card, index) => {
-      const isWinningCard = winners.some((winner) => {
-        const showdownData = showdownPlayers.find(
-          (sp) => sp.playerId === winner.playerId
-        );
-        const winningCards = getWinningCards(
-          winner.handDescription,
-          showdownData ? showdownData.cards : [],
-          table.communityCards
-        );
-        return winningCards.includes(card);
-      });
-      const gap = isMobile ? 40 : 10;
-      return (
-        <g key={`community-${index}`}>
-          <image
-            x={isMobile ? communityCardsX + index * (cardWidth + gap) - 120 : communityCardsX + index * (cardWidth + gap)}
-            y={isMobile ? communityCardsY + 70 : communityCardsY}
-            width={isMobile ? cardWidth + 60 : cardWidth * 1.5}
-            height={isMobile ? cardHeight + 60 : cardHeight * 1.5}
-            href={getCardImagePath(card)}
-            preserveAspectRatio="xMidYMid meet"
-            className={isWinningCard && winners.length > 0 ? "card-highlight" : ""}
-            opacity={winners.length > 0 ? (isWinningCard ? 1 : 0.5) : 1}
-          />
-        </g>
-      );
-    })}
-  </g>
-)}
+            <g>
+              {winners.length > 0 && winners[0]?.handDescription && (
+                <>
+                  <text
+                    x={communityCardsX + totalWidth / 2}
+                    y={communityCardsY - 40}
+                    textAnchor="middle"
+                    fill="#facc15"
+                    fontSize={fontSizeMultiplier * 14}
+                    fontWeight="bold"
+                  >
+                    {winners[0].handDescription}
+                  </text>
+                  <text
+                    x={communityCardsX + totalWidth / 2}
+                    y={communityCardsY - 20}
+                    textAnchor="middle"
+                    fill="#facc15"
+                    fontSize={fontSizeMultiplier * 12}
+                    fontWeight="bold"
+                  >
+                    Won:{" "}
+                    {winners.reduce((sum, w) => sum + w.chipsWon, 0).toFixed(2)}
+                  </text>
+                </>
+              )}
+              {table.communityCards.map((card, index) => {
+                const isWinningCard = winners.some((winner) => {
+                  const showdownData = showdownPlayers.find(
+                    (sp) => sp.playerId === winner.playerId
+                  );
+                  const winningCards = getWinningCards(
+                    winner.handDescription,
+                    showdownData ? showdownData.cards : [],
+                    table.communityCards
+                  );
+                  return winningCards.includes(card);
+                });
+                const gap = isMobile ? 40 : 10;
+                return (
+                  <g key={`community-${index}`}>
+                    <image
+                      x={
+                        isMobile
+                          ? communityCardsX + index * (cardWidth + gap) - 120
+                          : communityCardsX + index * (cardWidth + gap)
+                      }
+                      y={isMobile ? communityCardsY + 70 : communityCardsY}
+                      width={isMobile ? cardWidth + 60 : cardWidth * 1.5}
+                      height={isMobile ? cardHeight + 60 : cardHeight * 1.5}
+                      href={getCardImagePath(card)}
+                      preserveAspectRatio="xMidYMid meet"
+                      className={
+                        isWinningCard && winners.length > 0
+                          ? "card-highlight"
+                          : ""
+                      }
+                      opacity={
+                        winners.length > 0 ? (isWinningCard ? 1 : 0.5) : 1
+                      }
+                    />
+                  </g>
+                );
+              })}
+            </g>
+          )}
           {isAdmin &&
             adminPreviewCards.length > 0 &&
             table.round !== "showdown" &&
@@ -734,36 +739,44 @@ export const PokerTableSVG = memo(
               <g
                 key={`seat-${seat.seatIndex}`}
                 className={`seat-${seat.seatIndex}`}
-                transform={`translate(${x - seatSize / 2}, ${y - seatSize / 2})`}
+                transform={`translate(${x - seatSize / 2}, ${
+                  y - seatSize / 2
+                })`}
               >
-                {seat.occupied && seat.player  ? (
+                {seat.occupied && seat.player ? (
                   <>
-                    {isCurrentTurn && inHand && currentPlayer?.cards.length > 0 &&(
-                      <circle
-                        cx={seatSize / 2}
-                        cy={seatSize / 2}
-                        r={turnCircleRadius}
-                        fill="none"
-                        stroke="#00ff00"
-                        strokeWidth="3"
-                        className="turn-circle"
-                        style={{
-                          transformOrigin: `${seatSize / 2}px ${seatSize / 2}px`,
-                        }}
-                      />
-                    )}
-                    {isCurrentTurn && inHand && currentPlayer?.cards.length > 0 &&(
-                      <text
-                        x={seatSize / 2}
-                        y={-10}
-                        textAnchor="middle"
-                        fill="#00ff00"
-                        fontSize={fontSizeMultiplier * 14}
-                        fontWeight="bold"
-                      >
-                        {timeLeft}s
-                      </text>
-                    )}
+                    {isCurrentTurn &&
+                      inHand &&
+                      currentPlayer?.cards.length > 0 && (
+                        <circle
+                          cx={seatSize / 2}
+                          cy={seatSize / 2}
+                          r={turnCircleRadius}
+                          fill="none"
+                          stroke="#00ff00"
+                          strokeWidth="3"
+                          className="turn-circle"
+                          style={{
+                            transformOrigin: `${seatSize / 2}px ${
+                              seatSize / 2
+                            }px`,
+                          }}
+                        />
+                      )}
+                    {isCurrentTurn &&
+                      inHand &&
+                      currentPlayer?.cards.length > 0 && (
+                        <text
+                          x={seatSize / 2}
+                          y={-10}
+                          textAnchor="middle"
+                          fill="#00ff00"
+                          fontSize={fontSizeMultiplier * 14}
+                          fontWeight="bold"
+                        >
+                          {timeLeft}s
+                        </text>
+                      )}
                     {isWinner && (
                       <circle
                         cx={seatSize / 2}
@@ -873,7 +886,7 @@ export const PokerTableSVG = memo(
                           <div
                             style={{
                               backgroundColor: getActionBackgroundColor(
-                                lastAction.action,
+                                lastAction.action
                               ),
                               borderRadius: "20px",
                               padding: "4px 8px",
@@ -940,13 +953,13 @@ export const PokerTableSVG = memo(
               </g>
             );
           })}
-         
+
           {displayPositions.map((seat) => {
             const { x, y } = getSeatPosition(seat.seatIndex, cappedMaxPlayers);
             const showdownData =
               seat.occupied &&
               showdownPlayers.find(
-                (sp) => sp.playerId === seat.player?._id.toString(),
+                (sp) => sp.playerId === seat.player?._id.toString()
               );
             const inHand =
               seat.occupied && seat.player ? seat.player.inHand : true;
@@ -959,7 +972,7 @@ export const PokerTableSVG = memo(
                   typeof showdownData === "object"
                     ? showdownData.cards
                     : seat.player!.cards,
-                  table.communityCards,
+                  table.communityCards
                 )
               : [];
             const isCurrentUser =
@@ -1003,15 +1016,15 @@ export const PokerTableSVG = memo(
                       isCurrentUser
                         ? standardCardX + idx * cardSpacing
                         : isCardOpen
-                          ? overlayCardX + idx * 20
-                          : smallCardX + idx * 20
+                        ? overlayCardX + idx * 20
+                        : smallCardX + idx * 20
                     }
                     y={
                       isCurrentUser
                         ? standardCardY
                         : isCardOpen
-                          ? overlayCardY
-                          : smallCardY + (idx === 1 ? 10 : 0)
+                        ? overlayCardY
+                        : smallCardY + (idx === 1 ? 10 : 0)
                     }
                     width={
                       isCurrentUser || isCardOpen
@@ -1043,10 +1056,10 @@ export const PokerTableSVG = memo(
       const cardWidth = 60;
       const cardHeight = 80;
       const totalCards = table
-      ? getVisibleCardCount
-        ? getVisibleCardCount(table.round, table.communityCards.length)
-        : 0
-      : 0;
+        ? getVisibleCardCount
+          ? getVisibleCardCount(table.round, table.communityCards.length)
+          : 0
+        : 0;
       const totalWidth = totalCards * cardWidth + (totalCards - 1) * 10;
       const centerX = 500;
       const centerY = 636;
@@ -1086,7 +1099,9 @@ export const PokerTableSVG = memo(
               .winner-text { animation: fadeInUp 0.5s ease-out; }
               .turn-circle { 
                 stroke-dasharray: ${turnCircleCircumference}; 
-                stroke-dashoffset: ${(1 - timeLeft / 20) * turnCircleCircumference}; 
+                stroke-dashoffset: ${
+                  (1 - timeLeft / 20) * turnCircleCircumference
+                }; 
                 transform: rotate(-90deg);
                 transform-origin: center;
                 transition: stroke-dashoffset 1s linear;
@@ -1175,7 +1190,6 @@ export const PokerTableSVG = memo(
                 x="420"
                 y="800"
                 textAnchor="middle"
-
                 fontSize={"24"}
                 fill="#BEBEBE"
                 fontWeight="Bold"
@@ -1200,61 +1214,74 @@ export const PokerTableSVG = memo(
             </foreignObject>
 
             {showCommunityCards && !isDealing && (
-  <g>
-    {winners.length > 0 && winners[0]?.handDescription && (
-      <>
-        <text
-          x={communityCardsX + totalWidth / 2}
-          y={communityCardsY - 40}
-          textAnchor="middle"
-          fill="#facc15"
-          fontSize={fontSizeMultiplier * 14}
-          fontWeight="bold"
-        >
-          {winners[0].handDescription}
-        </text>
-        <text
-          x={communityCardsX + totalWidth / 2}
-          y={communityCardsY - 20}
-          textAnchor="middle"
-          fill="#facc15"
-          fontSize={fontSizeMultiplier * 12}
-          fontWeight="bold"
-        >
-          Won: {winners.reduce((sum, w) => sum + w.chipsWon, 0).toFixed(2)}
-        </text>
-      </>
-    )}
-    {table.communityCards.map((card, index) => {
-      const isWinningCard = winners.some((winner) => {
-        const showdownData = showdownPlayers.find(
-          (sp) => sp.playerId === winner.playerId
-        );
-        const winningCards = getWinningCards(
-          winner.handDescription,
-          showdownData ? showdownData.cards : [],
-          table.communityCards
-        );
-        return winningCards.includes(card);
-      });
-      const gap = isMobile ? 40 : 10;
-      return (
-        <g key={`community-${index}`}>
-          <image
-            x={isMobile ? communityCardsX + index * (cardWidth + gap) - 120 : communityCardsX + index * (cardWidth + gap)}
-            y={isMobile ? communityCardsY + 70 : communityCardsY}
-            width={isMobile ? cardWidth + 60 : cardWidth * 1.5}
-            height={isMobile ? cardHeight + 60 : cardHeight * 1.5}
-            href={getCardImagePath(card)}
-            preserveAspectRatio="xMidYMid meet"
-            className={isWinningCard && winners.length > 0 ? "card-highlight" : ""}
-            opacity={winners.length > 0 ? (isWinningCard ? 1 : 0.5) : 1}
-          />
-        </g>
-      );
-    })}
-  </g>
-)}
+              <g>
+                {winners.length > 0 && winners[0]?.handDescription && (
+                  <>
+                    <text
+                      x={communityCardsX + totalWidth / 2}
+                      y={communityCardsY - 40}
+                      textAnchor="middle"
+                      fill="#facc15"
+                      fontSize={fontSizeMultiplier * 14}
+                      fontWeight="bold"
+                    >
+                      {winners[0].handDescription}
+                    </text>
+                    <text
+                      x={communityCardsX + totalWidth / 2}
+                      y={communityCardsY - 20}
+                      textAnchor="middle"
+                      fill="#facc15"
+                      fontSize={fontSizeMultiplier * 12}
+                      fontWeight="bold"
+                    >
+                      Won:{" "}
+                      {winners
+                        .reduce((sum, w) => sum + w.chipsWon, 0)
+                        .toFixed(2)}
+                    </text>
+                  </>
+                )}
+                {table.communityCards.map((card, index) => {
+                  const isWinningCard = winners.some((winner) => {
+                    const showdownData = showdownPlayers.find(
+                      (sp) => sp.playerId === winner.playerId
+                    );
+                    const winningCards = getWinningCards(
+                      winner.handDescription,
+                      showdownData ? showdownData.cards : [],
+                      table.communityCards
+                    );
+                    return winningCards.includes(card);
+                  });
+                  const gap = isMobile ? 40 : 10;
+                  return (
+                    <g key={`community-${index}`}>
+                      <image
+                        x={
+                          isMobile
+                            ? communityCardsX + index * (cardWidth + gap) - 120
+                            : communityCardsX + index * (cardWidth + gap)
+                        }
+                        y={isMobile ? communityCardsY + 70 : communityCardsY}
+                        width={isMobile ? cardWidth + 60 : cardWidth * 1.5}
+                        height={isMobile ? cardHeight + 60 : cardHeight * 1.5}
+                        href={getCardImagePath(card)}
+                        preserveAspectRatio="xMidYMid meet"
+                        className={
+                          isWinningCard && winners.length > 0
+                            ? "card-highlight"
+                            : ""
+                        }
+                        opacity={
+                          winners.length > 0 ? (isWinningCard ? 1 : 0.5) : 1
+                        }
+                      />
+                    </g>
+                  );
+                })}
+              </g>
+            )}
             {isAdmin &&
               adminPreviewCards.length > 0 &&
               table.round !== "showdown" &&
@@ -1281,14 +1308,14 @@ export const PokerTableSVG = memo(
             {displayPositions.map((seat) => {
               const { x, y } = getSeatPosition(
                 seat.seatIndex,
-                cappedMaxPlayers,
+                cappedMaxPlayers
               );
               const isWinner =
                 seat.occupied &&
                 winners.some((w) => w.playerId === seat.player?._id.toString());
               const winnerData = isWinner
                 ? winners.find(
-                    (w) => w.playerId === seat.player?._id.toString(),
+                    (w) => w.playerId === seat.player?._id.toString()
                   )
                 : null;
               const lastAction =
@@ -1315,36 +1342,44 @@ export const PokerTableSVG = memo(
                 <g
                   key={`seat-${seat.seatIndex}`}
                   className={`seat-${seat.seatIndex}`}
-                  transform={`translate(${x - seatSize / 2}, ${y - seatSize / 2})`}
+                  transform={`translate(${x - seatSize / 2}, ${
+                    y - seatSize / 2
+                  })`}
                 >
-                  {seat.occupied && seat.player  ?  (
+                  {seat.occupied && seat.player ? (
                     <>
-                      {isCurrentTurn && inHand && currentPlayer?.cards.length > 0 &&(
-                        <circle
-                          cx={seatSize / 2}
-                          cy={seatSize / 2}
-                          r={turnCircleRadius}
-                          fill="none"
-                          stroke="#00ff00"
-                          strokeWidth="3"
-                          className="turn-circle"
-                          style={{
-                            transformOrigin: `${seatSize / 2}px ${seatSize / 2}px`,
-                          }}
-                        />
-                      )}
-                      {isCurrentTurn && inHand && currentPlayer?.cards.length > 0 &&(
-                        <text
-                          x={seatSize / 2}
-                          y={-10}
-                          textAnchor="middle"
-                          fill="#00ff00"
-                          fontSize={fontSizeMultiplier * 14}
-                          fontWeight="bold"
-                        >
-                          {timeLeft}s
-                        </text>
-                      )}
+                      {isCurrentTurn &&
+                        inHand &&
+                        currentPlayer?.cards.length > 0 && (
+                          <circle
+                            cx={seatSize / 2}
+                            cy={seatSize / 2}
+                            r={turnCircleRadius}
+                            fill="none"
+                            stroke="#00ff00"
+                            strokeWidth="3"
+                            className="turn-circle"
+                            style={{
+                              transformOrigin: `${seatSize / 2}px ${
+                                seatSize / 2
+                              }px`,
+                            }}
+                          />
+                        )}
+                      {isCurrentTurn &&
+                        inHand &&
+                        currentPlayer?.cards.length > 0 && (
+                          <text
+                            x={seatSize / 2}
+                            y={-10}
+                            textAnchor="middle"
+                            fill="#00ff00"
+                            fontSize={fontSizeMultiplier * 14}
+                            fontWeight="bold"
+                          >
+                            {timeLeft}s
+                          </text>
+                        )}
                       {isWinner && (
                         <circle
                           cx={seatSize / 2}
@@ -1493,12 +1528,12 @@ export const PokerTableSVG = memo(
             {displayPositions.map((seat) => {
               const { x, y } = getSeatPosition(
                 seat.seatIndex,
-                cappedMaxPlayers,
+                cappedMaxPlayers
               );
               const showdownData =
                 seat.occupied &&
                 showdownPlayers.find(
-                  (sp) => sp.playerId === seat.player?._id.toString(),
+                  (sp) => sp.playerId === seat.player?._id.toString()
                 );
               const inHand =
                 seat.occupied && seat.player ? seat.player.inHand : true;
@@ -1511,7 +1546,7 @@ export const PokerTableSVG = memo(
                     showdownData && typeof showdownData === "object"
                       ? showdownData.cards
                       : seat.player!.cards,
-                    table.communityCards,
+                    table.communityCards
                   )
                 : [];
               const isCurrentUser =
@@ -1556,15 +1591,15 @@ export const PokerTableSVG = memo(
                         isCurrentUser
                           ? standardCardX + idx * cardSpacing
                           : isCardOpen
-                            ? overlayCardX + idx * 30
-                            : smallCardX + idx * 20
+                          ? overlayCardX + idx * 30
+                          : smallCardX + idx * 20
                       }
                       y={
                         isCurrentUser
                           ? standardCardY
                           : isCardOpen
-                            ? overlayCardY
-                            : smallCardY + (idx === 1 ? 10 : 0)
+                          ? overlayCardY
+                          : smallCardY + (idx === 1 ? 10 : 0)
                       }
                       width={
                         isCurrentUser || isCardOpen
@@ -1595,7 +1630,7 @@ export const PokerTableSVG = memo(
     };
 
     return isMobile ? <MobileSVG /> : <DesktopSVG />;
-  },
+  }
 );
 
 PokerTableSVG.displayName = "PokerTableSVG";

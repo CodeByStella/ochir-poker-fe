@@ -24,7 +24,24 @@ import ChatComponent from "@/components/PokerTable/ChatSection";
 import Image from "next/image";
 import { formatNumber } from "@/utils/format-number";
 import { useSocketEvents } from "@/hooks/useSocketEvents";
-import { ALL_IN_SHOWDOWN_DELAY, IDealCardsData, IFlipCommunityCardData, IChipAdded, IChipAnimate, IHandResult, IMessage, IPlayerAction, IPotToWinnerData, WINNER_DISPLAY_DURATION, IWinnerData, ICollectChip, IAnimationQueueItem, IContribution, CHIP_ANIMATION_DURATION, SHUFFLE_DURATION } from "@/models/poker";
+import {
+  ALL_IN_SHOWDOWN_DELAY,
+  IDealCardsData,
+  IFlipCommunityCardData,
+  IChipAdded,
+  IChipAnimate,
+  IHandResult,
+  IMessage,
+  IPlayerAction,
+  IPotToWinnerData,
+  WINNER_DISPLAY_DURATION,
+  IWinnerData,
+  ICollectChip,
+  IAnimationQueueItem,
+  IContribution,
+  CHIP_ANIMATION_DURATION,
+  SHUFFLE_DURATION,
+} from "@/models/poker";
 
 export default function PokerTable() {
   const { id } = useParams();
@@ -34,7 +51,8 @@ export default function PokerTable() {
   const [table, setTable] = useState<ITable | null>(null);
   const [raiseAmount, setRaiseAmount] = useState<number>(0);
   const [isDealing, setIsDealing] = useState<boolean>(false);
-  const [dealAnimationComplete, setDealAnimationComplete] = useState<boolean>(true);
+  const [dealAnimationComplete, setDealAnimationComplete] =
+    useState<boolean>(true);
   const [winners, setWinners] = useState<IWinnerData[]>([]);
   const [showCommunityCards, setShowCommunityCards] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -45,39 +63,51 @@ export default function PokerTable() {
   const animationContainerRef = useRef<HTMLDivElement>(null);
   const animatedElementsRef = useRef<HTMLElement[]>([]);
   const gsapAnimationsRef = useRef<any[]>([]);
-  const [lastActions, setLastActions] = useState<Map<string, IPlayerAction>>(new Map());
+  const [lastActions, setLastActions] = useState<Map<string, IPlayerAction>>(
+    new Map()
+  );
   const [adminPreviewCards, setAdminPreviewCards] = useState<string[]>([]);
-  const [showdownPlayers, setShowdownPlayers] = useState<{ playerId: string; cards: string[] }[]>([]);
+  const [showdownPlayers, setShowdownPlayers] = useState<
+    { playerId: string; cards: string[] }[]
+  >([]);
   const [isRaiseOpen, setIsRaiseOpen] = useState<boolean>(false);
-  const [isFlippingCommunityCards, setIsFlippingCommunityCards] = useState<boolean>(false);
-  const [flipAnimationComplete, setFlipAnimationComplete] = useState<boolean>(true);
+  const [isFlippingCommunityCards, setIsFlippingCommunityCards] =
+    useState<boolean>(false);
+  const [flipAnimationComplete, setFlipAnimationComplete] =
+    useState<boolean>(true);
   const [pendingWinners, setPendingWinners] = useState<IWinnerData[]>([]);
   const [pendingShowdownPlayers, setPendingShowdownPlayers] = useState<
     { playerId: string; cards: string[] }[]
   >([]);
   const [chipAnimations, setChipAnimations] = useState<
-  {
-    action: string;
-    playerId: string;
-    seat: number;
-    amount: number;
-    key: string;
-    round: string;
-    isCollect?: boolean;
-    isPotToWinner?: boolean;
-    timestamp: string;
-    x?: number;
-    y?: number;
-    chipCount?: number;
-  }[]
->([]);
+    {
+      action: string;
+      playerId: string;
+      seat: number;
+      amount: number;
+      key: string;
+      round: string;
+      isCollect?: boolean;
+      isPotToWinner?: boolean;
+      timestamp: string;
+      x?: number;
+      y?: number;
+      chipCount?: number;
+    }[]
+  >([]);
   const [mergedChips, setMergedChips] = useState<
     { amount: number; key: string; round: string }[]
   >([]);
   const animatedKeysRef = useRef<Set<string>>(new Set());
-  const [animationTimestamps, setAnimationTimestamps] = useState<Map<string, string>>(new Map());
-  const [isCollectChipsComplete, setIsCollectChipsComplete] = useState<boolean>(true);
-  const [messages, setMessages] = useState<{ table: IMessage[]; lobby: IMessage[] }>({
+  const [animationTimestamps, setAnimationTimestamps] = useState<
+    Map<string, string>
+  >(new Map());
+  const [isCollectChipsComplete, setIsCollectChipsComplete] =
+    useState<boolean>(true);
+  const [messages, setMessages] = useState<{
+    table: IMessage[];
+    lobby: IMessage[];
+  }>({
     table: [],
     lobby: [],
   });
@@ -94,10 +124,13 @@ export default function PokerTable() {
   );
   const { token } = useSelector((state: RootState) => state.auth);
 
-  const { data: currentUser, mutate } = useSWR<IUser>(`swr.auth.me.${token}`, async () => {
-    const res = await authApi.me();
-    return res;
-  });
+  const { data: currentUser, mutate } = useSWR<IUser>(
+    `swr.auth.me.${token}`,
+    async () => {
+      const res = await authApi.me();
+      return res;
+    }
+  );
   const isAdmin = currentUser?.role === "admin";
 
   const shuffleSound = useMemo(() => new Audio("/mp3/shuffle.mp3"), []);
@@ -141,15 +174,18 @@ export default function PokerTable() {
     );
   }, [table]);
 
-  const safeRemoveChild = useCallback((parent: HTMLElement, child: HTMLElement) => {
-    try {
-      if (child.parentNode === parent) {
-        parent.removeChild(child);
+  const safeRemoveChild = useCallback(
+    (parent: HTMLElement, child: HTMLElement) => {
+      try {
+        if (child.parentNode === parent) {
+          parent.removeChild(child);
+        }
+      } catch (err) {
+        // console.error("Error removing child:", err);
       }
-    } catch (err) {
-      // console.error("Error removing child:", err);
-    }
-  }, []);
+    },
+    []
+  );
 
   const cleanupAnimations = useCallback(() => {
     gsapAnimationsRef.current = gsapAnimationsRef.current.filter((tween) => {
@@ -159,11 +195,14 @@ export default function PokerTable() {
       }
       return true;
     });
-  
+
     animatedElementsRef.current = animatedElementsRef.current.filter((el) => {
-      const isChip = el.style.background?.includes("chip.svg") || el.dataset.key?.includes("chip");
+      const isChip =
+        el.style.background?.includes("chip.svg") ||
+        el.dataset.key?.includes("chip");
       const isActiveChip = chipAnimations.some(
-        (anim) => anim.key === el.dataset.key
+        (anim) =>
+          anim.key === el.dataset.key && !anim.isCollect && !anim.isPotToWinner
       );
       const isTweenActive = gsapAnimationsRef.current.some((tween) =>
         tween.targets().includes(el)
@@ -174,7 +213,7 @@ export default function PokerTable() {
       safeRemoveChild(animationContainerRef.current!, el);
       return false;
     });
-  
+
     setIsAnimating(chipAnimations.length > 0);
   }, [safeRemoveChild, chipAnimations]);
 
@@ -202,7 +241,8 @@ export default function PokerTable() {
 
       players.forEach((player, playerIndex) => {
         const seatElement = document.querySelector(`.seat-${player.seat}`);
-        const cardContainer = seatElement?.querySelector(".player-cards") || seatElement;
+        const cardContainer =
+          seatElement?.querySelector(".player-cards") || seatElement;
         if (!seatElement || !cardContainer) return;
 
         const rect = cardContainer.getBoundingClientRect();
@@ -221,15 +261,19 @@ export default function PokerTable() {
           card.style.setProperty("--deal-y", `${targetY}px`);
           card.style.animationDelay = `${totalTime}ms`;
           card.style.zIndex = "100";
-          card.innerHTML = `<img src="${cardBack.src}" alt="Card Back" style="width: ${
-            isMobile ? 40 : 60
-          }px; height: ${isMobile ? 56 : 84}px;" />`;
+          card.innerHTML = `<img src="${
+            cardBack.src
+          }" alt="Card Back" style="width: ${isMobile ? 40 : 60}px; height: ${
+            isMobile ? 56 : 84
+          }px;" />`;
           container.appendChild(card);
           animatedElementsRef.current.push(card);
           totalTime += dealStep;
 
           setTimeout(() => {
-            flipSound.play().catch((err) => console.error("Error playing flip sound:", err));
+            flipSound
+              .play()
+              .catch((err) => console.error("Error playing flip sound:", err));
           }, totalTime - dealStep);
         });
       });
@@ -265,25 +309,24 @@ export default function PokerTable() {
         callback?.();
         return;
       }
-  
-  
+
       cleanupAnimations();
       setIsAnimating(true);
-  
+
       const cardWidth = isMobile ? 60 : 80;
       const cardHeight = isMobile ? 84 : 112;
       const gap = isMobile ? 10 : 15;
       const totalCards = round === "flop" ? 3 : round === "turn" ? 4 : 5;
       const totalWidth = totalCards * cardWidth + (totalCards - 1) * gap;
-  
+
       const svgCenterX = isMobile ? 400 : 614;
       const svgCenterY = isMobile ? 800 : 350;
       const svgCommunityCardsX = svgCenterX - totalWidth / 2;
       const svgCommunityCardsY = svgCenterY - (isMobile ? 50 : 30);
-  
+
       const svgTargetX = svgCommunityCardsX + cardIndex * (cardWidth + gap);
       const svgTargetY = svgCommunityCardsY;
-  
+
       const containerRect = container.getBoundingClientRect();
       const svgElement = document.querySelector("svg");
       const svgRect = svgElement?.getBoundingClientRect();
@@ -295,15 +338,17 @@ export default function PokerTable() {
         callback?.();
         return;
       }
-  
+
       const viewBoxWidth = isMobile ? 800 : 1228;
       const viewBoxHeight = isMobile ? 1600 : 700;
       const scaleX = svgRect.width / viewBoxWidth;
       const scaleY = svgRect.height / viewBoxHeight;
-  
-      const pixelTargetX = svgTargetX * scaleX + svgRect.left - containerRect.left;
-      const pixelTargetY = svgTargetY * scaleY + svgRect.top - containerRect.top;
-  
+
+      const pixelTargetX =
+        svgTargetX * scaleX + svgRect.left - containerRect.left;
+      const pixelTargetY =
+        svgTargetY * scaleY + svgRect.top - containerRect.top;
+
       const cardElement = document.createElement("div");
       cardElement.className = `${cardStyles.card} ${cardStyles.flip}`;
       cardElement.style.position = "absolute";
@@ -333,10 +378,12 @@ export default function PokerTable() {
           ease: "power2.out",
 
           onStart: () => {
-            flipSound.play().catch((err) => console.error("Error playing flip sound:", err));
+            flipSound
+              .play()
+              .catch((err) => console.error("Error playing flip sound:", err));
           },
           onUpdate: function () {
-            if (this.progress() >=  0.3 ) {
+            if (this.progress() >= 0.3) {
               const frontImagePath = getCardImagePath(card) || "/card.png";
               cardElement.innerHTML = `<img src="${frontImagePath}" alt="Card" style="width: 100%; height: 100%;" />`;
             }
@@ -347,24 +394,45 @@ export default function PokerTable() {
             setIsFlippingCommunityCards(false);
             setFlipAnimationComplete(true);
             callback?.();
-  
-            if (isAllIn && round === "showdown" && winnerCallback && pendingWinners.length > 0) {
+
+            if (
+              isAllIn &&
+              round === "showdown" &&
+              winnerCallback &&
+              pendingWinners.length > 0
+            ) {
               setTimeout(() => {
                 winnerCallback(pendingWinners, pendingShowdownPlayers);
               }, ALL_IN_SHOWDOWN_DELAY);
             }
-  
+
             processAnimationQueue();
           },
         }
       );
       gsapAnimationsRef.current.push(tween);
     },
-    [flipSound, isMobile, table, isAllIn, pendingWinners, pendingShowdownPlayers, cleanupAnimations]
+    [
+      flipSound,
+      isMobile,
+      table,
+      isAllIn,
+      pendingWinners,
+      pendingShowdownPlayers,
+      cleanupAnimations,
+    ]
   );
 
   const getChipSvg = (index: number, amount: number) => {
-    const chipSvgs = ["/poker/chip1.svg", "/poker/chip2.svg", "/poker/chip3.svg", "/poker/chip4.svg", "/poker/chip5.svg", "/poker/chip6.svg", "/poker/chip.svg"];
+    const chipSvgs = [
+      "/poker/chip1.svg",
+      "/poker/chip2.svg",
+      "/poker/chip3.svg",
+      "/poker/chip4.svg",
+      "/poker/chip5.svg",
+      "/poker/chip6.svg",
+      "/poker/chip.svg",
+    ];
     const chipIndex = index % chipSvgs.length;
     return chipSvgs[chipIndex];
   };
@@ -382,14 +450,18 @@ export default function PokerTable() {
       const container = animationContainerRef.current;
       if (!container || !table || animatedKeysRef.current.has(key)) {
         console.warn(
-          `Skipping chip animation: container=${!!container}, table=${!!table}, keyExists=${animatedKeysRef.current.has(key)}`
+          `Skipping chip animation: container=${!!container}, table=${!!table}, keyExists=${animatedKeysRef.current.has(
+            key
+          )}`
         );
         return;
       }
-  
+
       const seatElement = document.querySelector(`.seat-${seat}`);
       if (!seatElement) {
-        console.warn(`Seat element not found for seat ${seat}, playerId ${playerId}`);
+        console.warn(
+          `Seat element not found for seat ${seat}, playerId ${playerId}`
+        );
         animatedKeysRef.current.delete(key);
         setAnimationTimestamps((prev) => {
           const newMap = new Map(prev);
@@ -399,18 +471,18 @@ export default function PokerTable() {
         setIsAnimating(false);
         return;
       }
-  
+
       animatedKeysRef.current.add(key);
       setAnimationTimestamps((prev) => new Map(prev).set(key, timestamp));
       setIsAnimating(true);
-  
+
       const rect = seatElement.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
-  
+
       let startX: number, startY: number, targetX: number, targetY: number;
       const tableCenterX = containerRect.width / 2;
       const tableCenterY = containerRect.height / 2;
-  
+
       if (isPotToWinner) {
         startX = tableCenterX + (Math.random() - 0.5) * 20;
         startY = tableCenterY + (Math.random() - 0.5) * 20;
@@ -424,25 +496,23 @@ export default function PokerTable() {
       } else {
         startX = rect.left - containerRect.left;
         startY = rect.top - containerRect.top;
-  
+
         const seatCenterX = rect.left - containerRect.left + rect.width / 2;
         const seatCenterY = rect.top - containerRect.top + rect.height / 2;
-  
+
         const dx = seatCenterX - tableCenterX;
         const dy = seatCenterY - tableCenterY;
         const distance = Math.sqrt(dx * dx + dy * dy);
-  
+
         const offsetDistance = isMobile ? 80 : 90;
         const scaleFactor = offsetDistance / distance;
         targetX = seatCenterX - dx * scaleFactor;
         targetY = seatCenterY - dy * scaleFactor;
       }
-  
-      // Calculate number of chips to stack (same as renderMergedChips)
-      const chipUnit = 10000; // Match renderMergedChips
-      const chipCount = Math.min(Math.ceil(amount / chipUnit), 4); // Cap at 4 chips
-  
-      // Create a container for the chip stack
+
+      const chipUnit = 10000;
+      const chipCount = Math.min(Math.ceil(amount / chipUnit), 4);
+
       const chipStackContainer = document.createElement("div");
       chipStackContainer.dataset.key = key;
       chipStackContainer.style.position = "absolute";
@@ -453,47 +523,49 @@ export default function PokerTable() {
       chipStackContainer.style.transform = "translate(-50%, -50%)";
       container.appendChild(chipStackContainer);
       animatedElementsRef.current.push(chipStackContainer);
-      
-  
-      // Create individual chip elements
+
       const chipElements: HTMLElement[] = [];
-      const chipHeight = isMobile ? 15 : 20; // Match chip height for offset calculation
-      const verticalOffset = isMobile ? -5 : -5; // Reduced vertical offset for a more compact stack
-  
+      const chipHeight = isMobile ? 15 : 20;
+      const verticalOffset = isMobile ? -5 : -5;
+
       for (let i = 0; i < chipCount; i++) {
         const chipContainer = document.createElement("div");
         chipContainer.style.position = "absolute";
         chipContainer.style.display = "flex";
         chipContainer.style.alignItems = "center";
-  
+
         const chip = document.createElement("div");
-        chip.style.width = isMobile ? "15px" : "20px"; // Match renderMergedChips
-        chip.style.height = `${chipHeight}px`; // Match renderMergedChips
-        chip.style.background = `url('${getChipSvg(i, amount)}') no-repeat center / cover`; // Ensure varied colors
+        chip.style.width = isMobile ? "15px" : "20px";
+        chip.style.height = `${chipHeight}px`;
+        chip.style.background = `url('${getChipSvg(
+          i,
+          amount
+        )}') no-repeat center / cover`;
         chip.style.borderRadius = "50%";
-        chip.style.boxShadow = "0 2px 5px rgba(0, 0, 0, 0.3)"; // Match original shadow
-  
-        // Apply vertical offset for stacking
-        chipContainer.style.transform = `translate(0px, ${i * verticalOffset}px)`;
-        chipContainer.style.zIndex = `${300 + i}`; // Increment z-index to ensure top chip is visible
-  
+        chip.style.boxShadow = "0 2px 5px rgba(0, 0, 0, 0.3)";
+
+        chipContainer.style.transform = `translate(0px, ${
+          i * verticalOffset
+        }px)`;
+        chipContainer.style.zIndex = `${300 + i}`;
+
         chipContainer.appendChild(chip);
         chipStackContainer.appendChild(chipContainer);
         chipElements.push(chipContainer);
       }
-  
-      // Add amount text next to the stack
+
       const amountText = document.createElement("span");
-      amountText.className = `text-white ${isMobile ? "text-xs" : "text-sm"} font-bold`;
+      amountText.className = `text-white ${
+        isMobile ? "text-xs" : "text-sm"
+      } font-bold`;
       amountText.style.textShadow = "0 1px 2px rgba(0, 0, 0, 0.5)";
-      amountText.textContent = `${formatNumber(amount)}`; // Ensure formatNumber matches "38k" style
+      amountText.textContent = `${formatNumber(amount)}`;
       amountText.style.position = "absolute";
-      amountText.style.left = isMobile ? "20px" : "25px"; // Adjusted spacing to the right of the stack
-      amountText.style.top = `${(chipCount - 1) * verticalOffset / 2}px`; // Vertically center relative to stack
-      amountText.style.zIndex = "350"; // Ensure text is above chips
+      amountText.style.left = isMobile ? "20px" : "25px";
+      amountText.style.top = `${((chipCount - 1) * verticalOffset) / 2}px`;
+      amountText.style.zIndex = "350";
       chipStackContainer.appendChild(amountText);
-  
-      // Animate the entire chip stack
+
       const tween = gsap.fromTo(
         chipStackContainer,
         {
@@ -505,52 +577,56 @@ export default function PokerTable() {
         {
           x: targetX,
           y: targetY,
-          scale: isCollect || isPotToWinner ? 1 : 1,
-          opacity: isCollect || isPotToWinner ? 1 : 1,
+          scale: 1,
+          opacity: 1,
           duration: isCollect ? 1.5 : isPotToWinner ? 1.3 : 0.6,
           ease: "power2.out",
           delay: isCollect ? seat * 0.1 : isPotToWinner ? 0.2 * seat : 0,
           onStart: () => {
-            chipSound.play().catch((err) => console.error("Error playing chip sound:", err));
+            chipSound
+              .play()
+              .catch((err) => console.error("Error playing chip sound:", err));
           },
           onComplete: () => {
+            // Remove the animated chip stack from the DOM
+            safeRemoveChild(container, chipStackContainer);
+            animatedElementsRef.current = animatedElementsRef.current.filter(
+              (el) => el !== chipStackContainer
+            );
+
+            // Update chipAnimations state
+            setChipAnimations((prev) => {
+              const newAnimations = prev.map((anim) =>
+                anim.key === key
+                  ? { ...anim, x: targetX, y: targetY, chipCount }
+                  : anim
+              );
+              if (isCollect || isPotToWinner) {
+                return newAnimations.filter((anim) => anim.key !== key);
+              }
+              return newAnimations;
+            });
+
+            if (isCollect) {
+              setMergedChips((prev) => [
+                ...prev,
+                { amount, key: `merged-${Date.now()}-${round}`, round },
+              ]);
+              setIsCollectChipsComplete(true);
+            }
+
             if (isCollect || isPotToWinner) {
-              setChipAnimations((prev) => {
-                const newAnimations = prev.filter((anim) => anim.key !== key);
-                if (isCollect && newAnimations.every((anim) => !anim.isCollect)) {
-                  setIsCollectChipsComplete(true);
-                }
-                return newAnimations;
-              });
               animatedKeysRef.current.delete(key);
               setAnimationTimestamps((prev) => {
                 const newMap = new Map(prev);
                 newMap.delete(key);
                 return newMap;
               });
-              safeRemoveChild(container, chipStackContainer);
-              animatedElementsRef.current = animatedElementsRef.current.filter(
-                (el) => el !== chipStackContainer
-              );
-              if (isCollect) {
-                setMergedChips((prev) => [
-                  ...prev,
-                  { amount, key: `merged-${Date.now()}-${round}`, round },
-                ]);
-              }
-            } else {
-              setChipAnimations((prev) => {
-                const newAnimations = prev.map((anim) =>
-                  anim.key === key ? { ...anim, x: targetX, y: targetY, chipCount } : anim
-                );
-                return newAnimations;
-              });
-              chipStackContainer.style.transform = `translate(${targetX}px, ${targetY}px) scale0`;
-              chipStackContainer.style.opacity = "0.9";
-              chipStackContainer.style.zIndex = "300";
             }
-          
-            gsapAnimationsRef.current = gsapAnimationsRef.current.filter((t) => t !== tween);
+
+            gsapAnimationsRef.current = gsapAnimationsRef.current.filter(
+              (t) => t !== tween
+            );
             setIsAnimating(chipAnimations.length > 0);
             processAnimationQueue();
           },
@@ -568,15 +644,15 @@ export default function PokerTable() {
     ) {
       return;
     }
-  
+
     const nextItem = animationQueueRef.current[0];
     if (!dealAnimationComplete && nextItem.type !== "chipAction") {
       return;
     }
-  
+
     isProcessingAnimationRef.current = true;
     const item = animationQueueRef.current.shift()!;
-  
+
     if (item.type === "cardFlip") {
       const data = item.data as IFlipCommunityCardData;
       if (flippedCardIndicesRef.current.has(data.cardIndex)) {
@@ -586,10 +662,10 @@ export default function PokerTable() {
         processAnimationQueue();
         return;
       }
-  
+
       setIsFlippingCommunityCards(true);
       setFlipAnimationComplete(false);
-  
+
       const winnerCallback = (
         winners: IWinnerData[],
         showdownPlayers: { playerId: string; cards: string[] }[]
@@ -597,7 +673,7 @@ export default function PokerTable() {
         setWinners(winners);
         setShowdownPlayers(showdownPlayers);
       };
-  
+
       animateCommunityCardFlip(
         data.card,
         data.cardIndex,
@@ -607,7 +683,11 @@ export default function PokerTable() {
             if (!prev) return prev;
             const updatedCommunityCards = [...prev.communityCards];
             updatedCommunityCards[data.cardIndex] = data.card;
-            return { ...prev, communityCards: updatedCommunityCards, round: data.round };
+            return {
+              ...prev,
+              communityCards: updatedCommunityCards,
+              round: data.round,
+            };
           });
           setIsFlippingCommunityCards(false);
           setFlipAnimationComplete(true);
@@ -616,21 +696,36 @@ export default function PokerTable() {
           item.callback?.();
           processAnimationQueue();
         },
-        data.round === "showdown" && pendingWinners.length > 0 ? winnerCallback : undefined
+        data.round === "showdown" && pendingWinners.length > 0
+          ? winnerCallback
+          : undefined
       );
     } else if (item.type === "chipAction") {
-      const { playerId, seat, amount, key, round, timestamp, action } = item.data;
+      const { playerId, seat, amount, key, round, timestamp, action } =
+        item.data;
       if (animatedKeysRef.current.has(key)) {
         animatedKeysRef.current.delete(key);
       }
       setChipAnimations((prev) => {
         const exists = prev.some((anim) => anim.key === key);
         if (!exists) {
-          return [...prev, { playerId, seat, amount, key, round, timestamp, action }];
+          return [
+            ...prev,
+            { playerId, seat, amount, key, round, timestamp, action },
+          ];
         }
         return prev;
       });
-      animatePlayerActionChip(seat, amount, key, round, timestamp, false, false, playerId);
+      animatePlayerActionChip(
+        seat,
+        amount,
+        key,
+        round,
+        timestamp,
+        false,
+        false,
+        playerId
+      );
       isProcessingAnimationRef.current = false;
       item.callback?.();
       processAnimationQueue();
@@ -638,16 +733,27 @@ export default function PokerTable() {
       const { contributions, round, timestamp } = item.data;
       setIsCollectChipsComplete(false);
       setIsAnimating(true);
-  
+
       setChipAnimations((prev) => prev.filter((anim) => anim.isPotToWinner));
       cleanupAnimations();
-  
+
       contributions.forEach((contribution: IContribution) => {
         const { playerId, seat, amount } = contribution;
-        const key = `collect-${playerId}-${timestamp}-${Math.random().toString(36).substring(2, 8)}`;
-        animatePlayerActionChip(seat, amount, key, round, timestamp, true, false, playerId);
+        const key = `collect-${playerId}-${timestamp}-${Math.random()
+          .toString(36)
+          .substring(2, 8)}`;
+        animatePlayerActionChip(
+          seat,
+          amount,
+          key,
+          round,
+          timestamp,
+          true,
+          false,
+          playerId
+        );
       });
-  
+
       setTimeout(() => {
         setIsAnimating(false);
         setIsCollectChipsComplete(true);
@@ -658,16 +764,29 @@ export default function PokerTable() {
     } else if (item.type === "potToWinner") {
       const data = item.data as IPotToWinnerData & { timestamp: string };
       potSound.play().catch(console.error);
-  
+
       setChipAnimations((prev) => prev.filter((anim) => anim.isPotToWinner));
       setMergedChips([]);
       animatedKeysRef.current.clear();
-  
+
       data.winners.forEach(({ playerId, seat, chipsWon, key }, index) => {
-        const uniqueKey = key || `pot-to-winner-${playerId}-${data.timestamp}-${index}-${Math.random().toString(36).substring(2, 8)}`;
-        animatePlayerActionChip(seat, chipsWon, uniqueKey, table?.round || "preflop", data.timestamp, false, true, playerId);
+        const uniqueKey =
+          key ||
+          `pot-to-winner-${playerId}-${data.timestamp}-${index}-${Math.random()
+            .toString(36)
+            .substring(2, 8)}`;
+        animatePlayerActionChip(
+          seat,
+          chipsWon,
+          uniqueKey,
+          table?.round || "preflop",
+          data.timestamp,
+          false,
+          true,
+          playerId
+        );
       });
-  
+
       isProcessingAnimationRef.current = false;
       item.callback?.();
       processAnimationQueue();
@@ -696,21 +815,22 @@ export default function PokerTable() {
 
   const renderMergedChips = () => {
     if (!isCollectChipsComplete) return null;
-    const containerRect = animationContainerRef.current?.getBoundingClientRect();
+    const containerRect =
+      animationContainerRef.current?.getBoundingClientRect();
     if (!containerRect) return null;
-  
+
     const tableCenterX = containerRect.width / 2 + 10;
     const tableCenterY = containerRect.height / 2;
     const targetX = tableCenterX;
     const targetY = tableCenterY + (isMobile ? 100 : 140);
-  
+
     const totalAmount = mergedChips.reduce((sum, chip) => sum + chip.amount, 0);
     if (totalAmount === 0) return null;
-  
+
     // Calculate number of chips to stack (e.g., 1 chip per 100 units, max 10 chips)
     const chipUnit = 10000; // Adjust based on your game's economy
     const chipCount = Math.min(Math.ceil(totalAmount / chipUnit), 4); // Cap at 10 chips
-  
+
     return (
       <div
         style={{
@@ -730,9 +850,9 @@ export default function PokerTable() {
             key={`merged-chip-${i}`}
             style={{
               position: "absolute",
-              transform: `translate(${(Math.random() - 0.5) * (isMobile ? 2 : 3)}px, ${
-                -i * (isMobile ? 2 : 3)
-              }px)`,
+              transform: `translate(${
+                (Math.random() - 0.5) * (isMobile ? 2 : 3)
+              }px, ${-i * (isMobile ? 2 : 3)}px)`,
               display: "flex",
               alignItems: "center",
               gap: isMobile ? "4px" : "6px",
@@ -746,7 +866,9 @@ export default function PokerTable() {
             />
             {i === chipCount - 1 && (
               <span
-                className={`text-white ${isMobile ? "text-xs" : "text-sm"} font-bold`}
+                className={`text-white ${
+                  isMobile ? "text-xs" : "text-sm"
+                } font-bold`}
                 style={{
                   textShadow: "0 1px 2px rgba(0, 0, 0, 0.5)",
                 }}
@@ -761,17 +883,23 @@ export default function PokerTable() {
   };
 
   const updateAdminPreviewCards = (tableData: ITable) => {
-    if (isAdmin && tableData.status === "playing" && tableData.deck.length >= 5) {
-      const flippedCards = tableData.communityCards.filter((card) => card !== "");
+    if (
+      isAdmin &&
+      tableData.status === "playing" &&
+      tableData.deck.length >= 5
+    ) {
+      const flippedCards = tableData.communityCards.filter(
+        (card) => card !== ""
+      );
       const flippedCount = flippedCards.length;
-  
+
       const cardsToShow = Math.max(0, 5 - flippedCount);
-  
+
       const lastCards = tableData.deck
-        .slice(-5) 
-        .filter((card) => !flippedCards.includes(card)) 
+        .slice(-5)
+        .filter((card) => !flippedCards.includes(card))
         .slice(-cardsToShow);
-  
+
       setAdminPreviewCards(lastCards);
     } else {
       setAdminPreviewCards([]);
@@ -788,7 +916,11 @@ export default function PokerTable() {
     updateAdminPreviewCards(data);
     setRaiseAmount(data?.currentBet + data?.bigBlind || 0);
     flippedCardIndicesRef.current.clear();
-    if (data.status === "playing" && data.round !== "preflop" && data.communityCards.length > 0) {
+    if (
+      data.status === "playing" &&
+      data.round !== "preflop" &&
+      data.communityCards.length > 0
+    ) {
       setShowCommunityCards(true);
     } else {
       setShowCommunityCards(false);
@@ -810,112 +942,115 @@ export default function PokerTable() {
       ...prev,
       table: tableMessages,
     }));
-  }
+  };
 
-  
-const handleRoundUpdate = (data: ITable) => {
-  if (!data || data._id !== tableId) return;
+  const handleRoundUpdate = (data: ITable) => {
+    if (!data || data._id !== tableId) return;
 
-  setTable((prev) => {
-    if (!prev) return data;
-    return {
-      ...data,
-      communityCards: prev.communityCards.map((card, idx) =>
-        card || data.communityCards[idx] || ""
-      ),
-    };
-  });
-  updateAdminPreviewCards(data);
+    setTable((prev) => {
+      if (!prev) return data;
+      return {
+        ...data,
+        communityCards: prev.communityCards.map(
+          (card, idx) => card || data.communityCards[idx] || ""
+        ),
+      };
+    });
+    updateAdminPreviewCards(data);
 
-  // Only clear community card-related state if round changes
-  if (data.round !== table?.round) {
-    flippedCardIndicesRef.current.clear();
-    if (data.round !== "preflop" && data.communityCards.length > 0) {
-      setShowCommunityCards(true);
-      data.communityCards.forEach((card, index) => {
-        if (card) {
-          flippedCardIndicesRef.current.add(index);
-        }
-      });
-    } else {
-      setShowCommunityCards(false);
+    // Only clear community card-related state if round changes
+    if (data.round !== table?.round) {
+      flippedCardIndicesRef.current.clear();
+      if (data.round !== "preflop" && data.communityCards.length > 0) {
+        setShowCommunityCards(true);
+        data.communityCards.forEach((card, index) => {
+          if (card) {
+            flippedCardIndicesRef.current.add(index);
+          }
+        });
+      } else {
+        setShowCommunityCards(false);
+      }
     }
-  }
 
-  // Retain chip animations (do not clear non-pot-to-winner chips)
-  animationQueueRef.current = animationQueueRef.current.filter(
-    (item) => item.type === "potToWinner" || item.type === "collectChips"
-  );
+    // Retain chip animations (do not clear non-pot-to-winner chips)
+    animationQueueRef.current = animationQueueRef.current.filter(
+      (item) => item.type === "potToWinner" || item.type === "collectChips"
+    );
 
-  if (data.status === "playing" && data.players[data.currentPlayer]?._id) {
-    setLastActions((prev) => {
-      const newActions = new Map(prev);
-      newActions.delete(data.players[data.currentPlayer]._id.toString());
-      return newActions;
-    });
-  }
-};
-const handleGameStarted = (data: ITable) => {
-  shuffleSound.play().catch(console.error);
-  setTable(data);
-  updateAdminPreviewCards(data);
-  setShowCommunityCards(false);
-  setLastActions(new Map());
-  setFlipAnimationComplete(true);
-  setIsFlippingCommunityCards(false);
-  flippedCardIndicesRef.current.clear();
-  
-  // Clear all chip animations except pot-to-winner
-  setChipAnimations((prev) => prev.filter((anim) => anim.isPotToWinner));
-  setMergedChips([]);
-  setIsCollectChipsComplete(true);
-  animationQueueRef.current = [];
-  isProcessingAnimationRef.current = false;
-  animatedKeysRef.current.clear();
-  setAnimationTimestamps(new Map());
-  cleanupAnimations();
+    if (data.status === "playing" && data.players[data.currentPlayer]?._id) {
+      setLastActions((prev) => {
+        const newActions = new Map(prev);
+        newActions.delete(data.players[data.currentPlayer]._id.toString());
+        return newActions;
+      });
+    }
+  };
+  const handleGameStarted = (data: ITable) => {
+    shuffleSound.play().catch(console.error);
+    setTable(data);
+    updateAdminPreviewCards(data);
+    setShowCommunityCards(false);
+    setLastActions(new Map());
+    setFlipAnimationComplete(true);
+    setIsFlippingCommunityCards(false);
+    flippedCardIndicesRef.current.clear();
 
-  // Find small and big blind players
-  const smallBlindPlayer = data.players.find((p) => p.currentBet === data.smallBlind);
-  const bigBlindPlayer = data.players.find((p) => p.currentBet === data.bigBlind);
-  const timestamp = new Date().toISOString();
+    // Clear all chip animations except pot-to-winner
+    setChipAnimations((prev) => prev.filter((anim) => anim.isPotToWinner));
+    setMergedChips([]);
+    setIsCollectChipsComplete(true);
+    animationQueueRef.current = [];
+    isProcessingAnimationRef.current = false;
+    animatedKeysRef.current.clear();
+    setAnimationTimestamps(new Map());
+    cleanupAnimations();
 
-  // Add chip animations for blinds
-  if (smallBlindPlayer && data.smallBlind > 0) {
-    const key = `smallBlind-${smallBlindPlayer._id}-${timestamp}`;
-    animationQueueRef.current.push({
-      type: "chipAction",
-      data: {
-        playerId: smallBlindPlayer._id,
-        seat: smallBlindPlayer.seat,
-        amount: data.smallBlind,
-        key,
-        round: "preflop",
-        timestamp,
-        action: "smallBlind",
-      },
-      callback: () => {},
-    });
-  }
-  if (bigBlindPlayer && data.bigBlind > 0) {
-    const key = `bigBlind-${bigBlindPlayer._id}-${timestamp}`;
-    animationQueueRef.current.push({
-      type: "chipAction",
-      data: {
-        playerId: bigBlindPlayer._id,
-        seat: bigBlindPlayer.seat,
-        amount: data.bigBlind,
-        key,
-        round: "preflop",
-        timestamp,
-        action: "bigBlind",
-      },
-      callback: () => {},
-    });
-  }
-  
-  processAnimationQueue();
-};
+    // Find small and big blind players
+    const smallBlindPlayer = data.players.find(
+      (p) => p.currentBet === data.smallBlind
+    );
+    const bigBlindPlayer = data.players.find(
+      (p) => p.currentBet === data.bigBlind
+    );
+    const timestamp = new Date().toISOString();
+
+    // Add chip animations for blinds
+    if (smallBlindPlayer && data.smallBlind > 0) {
+      const key = `smallBlind-${smallBlindPlayer._id}-${timestamp}`;
+      animationQueueRef.current.push({
+        type: "chipAction",
+        data: {
+          playerId: smallBlindPlayer._id,
+          seat: smallBlindPlayer.seat,
+          amount: data.smallBlind,
+          key,
+          round: "preflop",
+          timestamp,
+          action: "smallBlind",
+        },
+        callback: () => {},
+      });
+    }
+    if (bigBlindPlayer && data.bigBlind > 0) {
+      const key = `bigBlind-${bigBlindPlayer._id}-${timestamp}`;
+      animationQueueRef.current.push({
+        type: "chipAction",
+        data: {
+          playerId: bigBlindPlayer._id,
+          seat: bigBlindPlayer.seat,
+          amount: data.bigBlind,
+          key,
+          round: "preflop",
+          timestamp,
+          action: "bigBlind",
+        },
+        callback: () => {},
+      });
+    }
+
+    processAnimationQueue();
+  };
 
   const handlePlayerAction = (actionData: IPlayerAction) => {
     setLastActions((prev) => {
@@ -926,7 +1061,7 @@ const handleGameStarted = (data: ITable) => {
       });
       return newActions;
     });
-  }
+  };
 
   const handleDealCards = (data: IDealCardsData) => {
     if (data.tableId !== tableId) return;
@@ -950,22 +1085,26 @@ const handleGameStarted = (data: ITable) => {
       setIsDealing(false);
       setShowCommunityCards(false);
     }, SHUFFLE_DURATION + data.players.length * 2 * 80 + 300);
-  }
+  };
 
   const handleFlipCommunityCard = (data: IFlipCommunityCardData) => {
-    if (data.tableId !== tableId || !data.card || data.cardIndex < 0 || data.cardIndex >= 5) {
+    if (
+      data.tableId !== tableId ||
+      !data.card ||
+      data.cardIndex < 0 ||
+      data.cardIndex >= 5
+    ) {
       return;
     }
-  
+
     if (flippedCardIndicesRef.current.has(data.cardIndex)) {
       return;
     }
-  
-  
+
     if (data.round !== "preflop") {
       setShowCommunityCards(true);
     }
-  
+
     animationQueueRef.current.push({
       type: "cardFlip",
       data,
@@ -974,12 +1113,16 @@ const handleGameStarted = (data: ITable) => {
           if (!prev) return prev;
           const updatedCommunityCards = [...prev.communityCards];
           updatedCommunityCards[data.cardIndex] = data.card;
-          return { ...prev, communityCards: updatedCommunityCards, round: data.round };
+          return {
+            ...prev,
+            communityCards: updatedCommunityCards,
+            round: data.round,
+          };
         });
         flippedCardIndicesRef.current.add(data.cardIndex);
       },
     });
-  
+
     processAnimationQueue();
   };
 
@@ -988,14 +1131,14 @@ const handleGameStarted = (data: ITable) => {
     setPendingWinners(data.winners);
     setPendingShowdownPlayers(data.showdownPlayers);
     setLastActions(new Map());
-    
+
     setShowCommunityCards(true);
-  
+
     const isCommunityCardAnimationComplete =
       !isFlippingCommunityCards &&
       flipAnimationComplete &&
       animationQueueRef.current.every((item) => item.type !== "cardFlip");
-  
+
     if (isCommunityCardAnimationComplete) {
       setWinners(data.winners);
       setShowdownPlayers(data.showdownPlayers);
@@ -1015,7 +1158,7 @@ const handleGameStarted = (data: ITable) => {
       };
       const animationCheckInterval = setInterval(checkAnimations, 100);
     }
-  
+
     setTimeout(() => {
       cleanupAnimations();
       setWinners([]);
@@ -1034,12 +1177,12 @@ const handleGameStarted = (data: ITable) => {
       isProcessingAnimationRef.current = false;
       animatedKeysRef.current.clear();
       setAnimationTimestamps(new Map());
-  
-      setTable((prev:any) => {
+
+      setTable((prev: any) => {
         if (!prev) return prev;
-        const updatedPlayers = prev.players.map((player:any) => ({
+        const updatedPlayers = prev.players.map((player: any) => ({
           ...player,
-          cards: [], 
+          cards: [],
         }));
         return { ...prev, players: updatedPlayers, communityCards: [] };
       });
@@ -1048,20 +1191,26 @@ const handleGameStarted = (data: ITable) => {
 
   const handleError = (msg: string) => {
     toastMessage.error(msg);
-  }
+  };
 
-  const handleChipsAdded = ({ tableId: updatedTableId, userId, amount }: IChipAdded) => {
+  const handleChipsAdded = ({
+    tableId: updatedTableId,
+    userId,
+    amount,
+  }: IChipAdded) => {
     if (updatedTableId !== tableId) return;
     setTable((prev) => {
       if (!prev) return prev;
       const updatedPlayers = prev.players.map((player) =>
-        player.user === userId ? { ...player, chips: player.chips + amount } : player
+        player.user === userId
+          ? { ...player, chips: player.chips + amount }
+          : player
       );
       return { ...prev, players: updatedPlayers };
     });
     chipSound.play().catch(console.error);
     toastMessage.success(`${amount}₮ нэмэгдлээ`);
-  }
+  };
 
   const handleChipAnimate = ({
     action,
@@ -1074,33 +1223,102 @@ const handleGameStarted = (data: ITable) => {
     timestamp,
   }: IChipAnimate) => {
     if (chipTableId !== tableId) return;
-    if (["call", "raise", "allin", "smallBlind", "bigBlind"].includes(action) && amount > 0) {
+    if (
+      ["call", "raise", "allin", "smallBlind", "bigBlind"].includes(action) &&
+      amount > 0
+    ) {
       const uniqueKey =
         key && !animatedKeysRef.current.has(key)
           ? key
-          : `${action}-${playerId}-${timestamp}-${Date.now()}-${Math.random()
+          : `${action}-${playerId}-${timestamp}-${Math.random()
               .toString(36)
               .substring(2, 8)}`;
-  
+
+      // Check if an animation already exists for this player in the current round
       setChipAnimations((prev) => {
-        const exists = prev.some((anim) => anim.key === uniqueKey);
-        if (!exists) {
-          return [
-            ...prev,
-            { playerId, seat, amount, key: uniqueKey, round, timestamp, action },
-          ];
+        const existingAnimIndex = prev.findIndex(
+          (anim) =>
+            anim.playerId === playerId &&
+            anim.round === round &&
+            !anim.isCollect &&
+            !anim.isPotToWinner
+        );
+
+        if (existingAnimIndex !== -1) {
+          // Merge the new amount with the existing animation
+          const existingAnim = prev[existingAnimIndex];
+          const newAmount = existingAnim.amount + amount;
+          const chipUnit = 10000;
+          const newChipCount = Math.min(Math.ceil(newAmount / chipUnit), 4);
+
+          // Update the existing animation
+          const updatedAnimations = [...prev];
+          updatedAnimations[existingAnimIndex] = {
+            ...existingAnim,
+            amount: newAmount,
+            chipCount: newChipCount,
+            timestamp,
+            action, // Update action to the latest one
+          };
+
+          // Trigger animation for the additional amount
+          animationQueueRef.current.push({
+            type: "chipAction",
+            data: {
+              playerId,
+              seat,
+              amount, // Animate only the new amount
+              key: uniqueKey,
+              round,
+              timestamp,
+              action,
+            },
+            callback: () => {
+              console.log(
+                `Chip action processed: playerId=${playerId}, key=${uniqueKey}, action=${action}`
+              );
+            },
+          });
+
+          return updatedAnimations;
         }
-        return prev;
+
+        // No existing animation, add a new one
+        const chipUnit = 10000;
+        const chipCount = Math.min(Math.ceil(amount / chipUnit), 4);
+        animationQueueRef.current.push({
+          type: "chipAction",
+          data: {
+            playerId,
+            seat,
+            amount,
+            key: uniqueKey,
+            round,
+            timestamp,
+            action,
+          },
+          callback: () => {
+            console.log(
+              `Chip action processed: playerId=${playerId}, key=${uniqueKey}, action=${action}`
+            );
+          },
+        });
+
+        return [
+          ...prev,
+          {
+            playerId,
+            seat,
+            amount,
+            key: uniqueKey,
+            round,
+            timestamp,
+            action,
+            chipCount,
+          },
+        ];
       });
-  
-      animationQueueRef.current.push({
-        type: "chipAction",
-        data: { playerId, seat, amount, key: uniqueKey, round, timestamp, action },
-        callback: () => {
-          // console.log(`Chip action processed: playerId=${playerId}, key=${uniqueKey}, action=${action}`);
-        },
-      });
-  
+
       processAnimationQueue();
     }
   };
@@ -1109,63 +1327,78 @@ const handleGameStarted = (data: ITable) => {
     setChipAnimations((prev) => prev.filter((anim) => anim.isPotToWinner));
     setMergedChips([]);
     animatedKeysRef.current.clear();
-  
+
     animationQueueRef.current.push({
-      type: 'potToWinner',
+      type: "potToWinner",
       data,
-      callback: () => {
-      }
+      callback: () => {},
     });
     processAnimationQueue();
-  }
+  };
 
-// Update handleCollectChips to clear all non-collect chips before animating collection
-const handleCollectChips = (data: ICollectChip) => {
-  if (data.tableId !== tableId) return;
+  // Update handleCollectChips to clear all non-collect chips before animating collection
+  const handleCollectChips = (data: ICollectChip) => {
+    if (data.tableId !== tableId) return;
 
-  // Clear all non-pot-to-winner chips for the current round
-  setChipAnimations((prev) =>
-    prev.filter((anim) => anim.isPotToWinner)
-  );
-  animatedKeysRef.current.forEach((k) => {
-    const anim = chipAnimations.find((a) => a.key === k);
-    if (!anim || !anim.isPotToWinner) {
-      animatedKeysRef.current.delete(k);
-      const chipContainer = animatedElementsRef.current.find((el) => el.dataset.key === k);
-      if (chipContainer && animationContainerRef.current) {
-        safeRemoveChild(animationContainerRef.current, chipContainer);
+    // Clear all non-pot-to-winner chips
+    setChipAnimations((prev) => prev.filter((anim) => anim.isPotToWinner));
+    animatedKeysRef.current.forEach((k) => {
+      const anim = chipAnimations.find((a) => a.key === k);
+      if (!anim || !anim.isPotToWinner) {
+        animatedKeysRef.current.delete(k);
+        const chipContainer = animatedElementsRef.current.find(
+          (el) => el.dataset.key === k
+        );
+        if (chipContainer && animationContainerRef.current) {
+          safeRemoveChild(animationContainerRef.current, chipContainer);
+        }
       }
-    }
-  });
-  animatedElementsRef.current = animatedElementsRef.current.filter(
-    (el) => {
+    });
+    animatedElementsRef.current = animatedElementsRef.current.filter((el) => {
       const anim = chipAnimations.find((a) => a.key === el.dataset.key);
       return anim && anim.isPotToWinner;
-    }
-  );
-  cleanupAnimations();
+    });
+    cleanupAnimations();
 
-  animationQueueRef.current.push({
-    type: "collectChips",
-    data: {
-      contributions: data.contributions,
-      round: table?.round || "preflop",
-      timestamp: data.timestamp,
-    },
-    callback: () => {
-      setChipAnimations((prev) => prev.filter((anim) => anim.isPotToWinner));
-    },
-  });
-  processAnimationQueue();
-};
+    animationQueueRef.current.push({
+      type: "collectChips",
+      data: {
+        contributions: data.contributions,
+        round: table?.round || "preflop",
+        timestamp: data.timestamp,
+      },
+      callback: () => {
+        setChipAnimations((prev) => prev.filter((anim) => anim.isPotToWinner));
+      },
+    });
+    processAnimationQueue();
+  };
 
-const renderPlayerChips = () => {
-  const containerRect = animationContainerRef.current?.getBoundingClientRect();
-  if (!containerRect || !table) return null;
+  const renderPlayerChips = () => {
+    const containerRect =
+      animationContainerRef.current?.getBoundingClientRect();
+    if (!containerRect || !table) return null;
 
-  return chipAnimations
-    .filter((anim) => !anim.isCollect && !anim.isPotToWinner && anim.x && anim.y)
-    .map((anim) => {
+    // Group chip animations by playerId and round to ensure one stack per player
+    const mergedAnimations = chipAnimations.reduce((acc, anim) => {
+      if (anim.isCollect || anim.isPotToWinner || !anim.x || !anim.y)
+        return acc;
+
+      const playerKey = `${anim.playerId}-${anim.round}`;
+      if (!acc[playerKey]) {
+        acc[playerKey] = { ...anim, amount: 0, chipCount: 0 };
+      }
+
+      acc[playerKey].amount += anim.amount;
+      const chipUnit = 10000;
+      acc[playerKey].chipCount = Math.min(
+        Math.ceil(acc[playerKey].amount / chipUnit),
+        4
+      );
+      return acc;
+    }, {} as Record<string, (typeof chipAnimations)[0]>);
+
+    return Object.values(mergedAnimations).map((anim) => {
       const { key, amount, x, y, chipCount, round } = anim;
       const chipHeight = isMobile ? 15 : 20;
       const verticalOffset = isMobile ? -5 : -5;
@@ -1205,7 +1438,9 @@ const renderPlayerChips = () => {
               />
               {i === (chipCount || 1) - 1 && (
                 <span
-                  className={`text-white ${isMobile ? "text-xs" : "text-sm"} font-bold`}
+                  className={`text-white ${
+                    isMobile ? "text-xs" : "text-sm"
+                  } font-bold`}
                   style={{
                     textShadow: "0 1px 2px rgba(0, 0, 0, 0.5)",
                   }}
@@ -1218,15 +1453,17 @@ const renderPlayerChips = () => {
         </div>
       );
     });
-};
+  };
   const handleClearChips = () => {
     setChipAnimations([]);
     setMergedChips([]);
     setIsCollectChipsComplete(true);
-    animationQueueRef.current = animationQueueRef.current.filter(item => item.type !== 'chipAction' && item.type !== 'collectChips');
+    animationQueueRef.current = animationQueueRef.current.filter(
+      (item) => item.type !== "chipAction" && item.type !== "collectChips"
+    );
     cleanupAnimations();
     processAnimationQueue();
-  }
+  };
 
   const handleLobbyMessage = (message: IMessage[]) => {
     const formattedLobbyMessages = message.map((msg) => ({
@@ -1237,23 +1474,27 @@ const renderPlayerChips = () => {
     }));
     setMessages((prev) => ({
       ...prev,
-      lobby: formattedLobbyMessages
+      lobby: formattedLobbyMessages,
     }));
-  }
+  };
 
   const handleNewMessage = (message: IMessage) => {
     setMessages((prev) => ({
       ...prev,
       [message.chatType]: [...prev[message.chatType], message],
     }));
-  }
+  };
 
   const { socket, isConnected } = useSocketEvents({
     onTableData: handleTableData,
     onTableUpdate: handleTableData,
     onRoundUpdate: handleRoundUpdate,
-    onPlayerDisconnected: (e) => { console.log(e, "playerDisconnnected") },
-    onPlayerRemoved: (e) => { console.log(e) },
+    onPlayerDisconnected: (e) => {
+      console.log(e, "playerDisconnnected");
+    },
+    onPlayerRemoved: (e) => {
+      console.log(e);
+    },
     onGameStarted: handleGameStarted,
     onPlayerAction: handlePlayerAction,
     onDealCard: handleDealCards,
@@ -1266,7 +1507,7 @@ const renderPlayerChips = () => {
     onCollectChips: handleCollectChips,
     onClearChips: handleClearChips,
     onLobbyMessage: handleLobbyMessage,
-    onNewMessage: handleNewMessage
+    onNewMessage: handleNewMessage,
   });
 
   const { data: tableData, error: tableError } = useSWRSubscription(
@@ -1380,22 +1621,32 @@ const renderPlayerChips = () => {
     let betAmount = 0;
     switch (action) {
       case "fold":
-        foldSound.play().catch((err) => console.error("Error playing fold sound:", err));
+        foldSound
+          .play()
+          .catch((err) => console.error("Error playing fold sound:", err));
         break;
       case "check":
-        checkSound.play().catch((err) => console.error("Error playing check sound:", err));
+        checkSound
+          .play()
+          .catch((err) => console.error("Error playing check sound:", err));
         break;
       case "call":
         betAmount = table.currentBet - currentPlayer.currentBet;
-        callSound.play().catch((err) => console.error("Error playing call sound:", err));
+        callSound
+          .play()
+          .catch((err) => console.error("Error playing call sound:", err));
         break;
       case "raise":
         betAmount = amount || raiseAmount;
-        raiseSound.play().catch((err) => console.error("Error playing raise sound:", err));
+        raiseSound
+          .play()
+          .catch((err) => console.error("Error playing raise sound:", err));
         break;
       case "allin":
         betAmount = currentPlayer.chips;
-        raiseSound.play().catch((err) => console.error("Error playing raise sound:", err));
+        raiseSound
+          .play()
+          .catch((err) => console.error("Error playing raise sound:", err));
         break;
     }
     socket?.emit("gameAction", {
@@ -1574,7 +1825,7 @@ const renderPlayerChips = () => {
             flippedCardIndices={flippedCardIndicesRef.current}
             isMyTurn={isMyTurn}
             currentPlayer={currentPlayer}
-            />
+          />
           <div
             ref={animationContainerRef}
             className="absolute"
@@ -1585,8 +1836,8 @@ const renderPlayerChips = () => {
               zIndex: 50,
             }}
           >
-           {renderPlayerChips()}
-           {renderMergedChips()}
+            {renderPlayerChips()}
+            {renderMergedChips()}
           </div>
         </div>
       </div>
@@ -1595,23 +1846,30 @@ const renderPlayerChips = () => {
         <p className="text-gray-500">#{table.name}</p>
       </div>
 
-      <ChatComponent messages={messages} tableId={tableId} currentUser={currentUser} socket={socket} />
+      <ChatComponent
+        messages={messages}
+        tableId={tableId}
+        currentUser={currentUser}
+        socket={socket}
+      />
       <Waitinglist table={table} />
       <SeatInstruction isUserSeated={isUserSeated} isMobile={isMobile} />
 
-      {isMyTurn && table.status === "playing" && currentPlayer?.cards.length > 0 && (
-        <ButtonNav
-          isRaiseOpen={isRaiseOpen}
-          setIsRaiseOpen={setIsRaiseOpen}
-          isMobile={isMobile}
-          raiseAmount={raiseAmount}
-          setRaiseAmount={setRaiseAmount}
-          table={table}
-          currentPlayer={currentPlayer}
-          gameAction={gameAction}
-          dealAnimationComplete={dealAnimationComplete}
-        />
-      )}
+      {isMyTurn &&
+        table.status === "playing" &&
+        currentPlayer?.cards.length > 0 && (
+          <ButtonNav
+            isRaiseOpen={isRaiseOpen}
+            setIsRaiseOpen={setIsRaiseOpen}
+            isMobile={isMobile}
+            raiseAmount={raiseAmount}
+            setRaiseAmount={setRaiseAmount}
+            table={table}
+            currentPlayer={currentPlayer}
+            gameAction={gameAction}
+            dealAnimationComplete={dealAnimationComplete}
+          />
+        )}
 
       {isModalOpen && (
         <SeatModal
