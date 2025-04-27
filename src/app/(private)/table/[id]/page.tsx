@@ -1638,7 +1638,7 @@ export default function PokerTable() {
 
       setTimeout (() => {
           socket.emit("joinTable", { userId: currentUser?._id, tableId });
-      }, 2000);
+      }, 1000);
       
       return () => {
         socket.off("tableData", handleTableData);
