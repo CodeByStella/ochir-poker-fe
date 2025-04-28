@@ -1568,16 +1568,24 @@ export default function PokerTable() {
     processAnimationQueue();
   };
 
-  const handleLobbyMessage = (message: IMessage[]) => {
-    const formattedLobbyMessages = message.map((msg) => ({
-      chatType: "lobby" as const,
-      user: { _id: msg.user._id, name: msg.user.name },
-      content: msg.content,
-      timestamp: new Date(msg.timestamp),
-    }));
+  const handleLobbyMessage = (msg: IMessage | IMessage[]) => {
+    const formattedMessages = Array.isArray(msg)
+      ? msg.map((m) => ({
+          chatType: "lobby" as const,
+          user: { _id: m.user._id, name: m.user.name },
+          content: m.content,
+          timestamp: new Date(m.timestamp),
+        }))
+      : [{
+          chatType: "lobby" as const,
+          user: { _id: msg.user._id, name: msg.user.name },
+          content: msg.content,
+          timestamp: new Date(msg.timestamp),
+        }];
+  
     setMessages((prev) => ({
       ...prev,
-      lobby: formattedLobbyMessages,
+      lobby: [...prev.lobby, ...formattedMessages],
     }));
   };
 

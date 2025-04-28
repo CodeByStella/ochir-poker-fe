@@ -8,7 +8,7 @@ export const siteConfig = {
     twitter: "https://twitter.com/poker",
   },
 };
-// export const siteApi = "https://backs.ochirpoker.online"
-export const siteApi = "http://localhost:3011"
+export const siteApi = "https://backs.ochirpoker.online"
+// export const siteApi = "http://localhost:3011"
 
 export type SiteConfig = typeof siteConfig;
