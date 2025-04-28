@@ -60,6 +60,7 @@ export default function PokerTable() {
   const [chipAmount, setChipAmount] = useState<number>(0);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  const [isMyTurnReady, setMyTurnReady] = useState<boolean>(true);
   const animationContainerRef = useRef<HTMLDivElement>(null);
   const animatedElementsRef = useRef<HTMLElement[]>([]);
   const gsapAnimationsRef = useRef<any[]>([]);
@@ -252,7 +253,7 @@ export default function PokerTable() {
           anim.key === el.dataset.key && !anim.isCollect && !anim.isPotToWinner
       );
       const isTweenActive = gsapAnimationsRef.current.some((tween) =>
-        tween.targets().includes(el)
+        tween && tween.vars.targets && tween.vars.targets.includes(el)
       );
       if (isChip && (isActiveChip || isTweenActive)) {
         return true;
@@ -411,7 +412,9 @@ export default function PokerTable() {
       onComplete: () => {
         cleanupAnimations();
         setIsAnimating(false);
-        setIsFlippingCommunityCards(false);
+        setTimeout(() => {
+          setIsFlippingCommunityCards(false);
+        }, 3000)
         setFlipAnimationComplete(true);
         callback?.();
 
@@ -721,7 +724,6 @@ export default function PokerTable() {
     if (item.type === "cardFlip") {
       const data = item.data as IFlipCommunityCardData;
       if (flippedCardIndicesRef.current.has(data.cardIndex)) {
-        console.warn(`Card index ${data.cardIndex} already flipped, skipping`);
         isProcessingAnimationRef.current = false;
         item.callback?.();
         processAnimationQueue();
@@ -754,7 +756,6 @@ export default function PokerTable() {
               round: data.round,
             };
           });
-          setIsFlippingCommunityCards(false);
           setFlipAnimationComplete(true);
           flippedCardIndicesRef.current.add(data.cardIndex);
           isProcessingAnimationRef.current = false;
@@ -797,6 +798,7 @@ export default function PokerTable() {
     } else if (item.type === "collectChips") {
       const { contributions, round, timestamp } = item.data;
       setIsCollectChipsComplete(false);
+      setMyTurnReady(false);
       setIsAnimating(true);
 
       setChipAnimations((prev) => prev.filter((anim) => anim.isPotToWinner));
@@ -822,6 +824,9 @@ export default function PokerTable() {
       setTimeout(() => {
         setIsAnimating(false);
         setIsCollectChipsComplete(true);
+        setTimeout(() => {
+          setMyTurnReady(true);
+        }, 1000)
         isProcessingAnimationRef.current = false;
         item.callback?.();
         processAnimationQueue();
@@ -874,7 +879,7 @@ export default function PokerTable() {
         setIsAnimating(false);
         processAnimationQueue();
       }
-    }, 4000);
+    }, 2000);
     return () => clearTimeout(timeout);
   }, [isAnimating, cleanupAnimations, processAnimationQueue]);
 
@@ -1514,7 +1519,7 @@ export default function PokerTable() {
             zIndex: 300,
             transform: "translate(-50%, -50%)",
           }}
-          className="gap-2"
+          className="gap-2 renderPlayerChips"
         >
           {Array.from({ length: chipCount || 1 }).map((_, i) => (
             <div
@@ -1841,12 +1846,12 @@ export default function PokerTable() {
     ...player,
   }));
   const isUserSeated = players.some((p) => p.user === currentUser?._id);
-  const currentPlayer = table?.players[table.currentPlayer];
+  const currentPlayer = table.players[table.currentPlayer];
   const isMyTurn =
     table.status === "playing" &&
     currentPlayer?.user === currentUser?._id &&
     !currentPlayer?.hasActed &&
-    !winners.length;
+    !winners.length && !isAnimating && !isFlippingCommunityCards && isMyTurnReady;
 
   return (
     <div
