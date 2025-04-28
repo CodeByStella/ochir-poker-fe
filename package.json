@@ -36,6 +36,7 @@
     "react-lottie": "^1.2.10",
     "react-redux": "^9.2.0",
     "redux-persist": "^6.0.0",
+    "sharp": "^0.34.1",
     "socket.io-client": "^4.8.1",
     "swr": "^2.2.5",
     "yup": "^1.4.0"
