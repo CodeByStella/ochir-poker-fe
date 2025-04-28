@@ -60,6 +60,7 @@ export default function PokerTable() {
   const [chipAmount, setChipAmount] = useState<number>(0);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  const [isMyTurnReady, setMyTurnReady] = useState<boolean>(true);
   const animationContainerRef = useRef<HTMLDivElement>(null);
   const animatedElementsRef = useRef<HTMLElement[]>([]);
   const gsapAnimationsRef = useRef<any[]>([]);
@@ -133,14 +134,61 @@ export default function PokerTable() {
   );
   const isAdmin = currentUser?.role === "admin";
 
-  const shuffleSound = useMemo(() => new Audio("/mp3/shuffle.mp3"), []);
-  const foldSound = useMemo(() => new Audio("/mp3/fold.mp3"), []);
-  const potSound = useMemo(() => new Audio("/mp3/pot.mp3"), []);
-  const chipSound = useMemo(() => new Audio("/mp3/chip.mp3"), []);
-  const flipSound = useMemo(() => new Audio("/mp3/flip.mp3"), []);
-  const checkSound = useMemo(() => new Audio("/mp3/check.mp3"), []);
-  const callSound = useMemo(() => new Audio("/mp3/call.mp3"), []);
-  const raiseSound = useMemo(() => new Audio("/mp3/raise.mp3"), []);
+  const shuffleSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/shuffle.mp3");
+    }
+    return null;
+  }, []);
+  
+  const foldSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/fold.mp3");
+    }
+    return null;
+  }, []);
+  
+  const potSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/pot.mp3");
+    }
+    return null;
+  }, []);
+  
+  const chipSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/chip.mp3");
+    }
+    return null;
+  }, []);
+  
+  const flipSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/flip.mp3");
+    }
+    return null;
+  }, []);
+  
+  const checkSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/check.mp3");
+    }
+    return null;
+  }, []);
+  
+  const callSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/call.mp3");
+    }
+    return null;
+  }, []);
+  
+  const raiseSound = useMemo(() => {
+    if (typeof window !== "undefined") {
+      return new Audio("/mp3/raise.mp3");
+    }
+    return null;
+  }, []);
 
   const getCardImagePath = (card: string) => {
     const suit = card.slice(-1);
@@ -205,7 +253,7 @@ export default function PokerTable() {
           anim.key === el.dataset.key && !anim.isCollect && !anim.isPotToWinner
       );
       const isTweenActive = gsapAnimationsRef.current.some((tween) =>
-        tween.targets().includes(el)
+        tween && tween.vars.targets && tween.vars.targets.includes(el)
       );
       if (isChip && (isActiveChip || isTweenActive)) {
         return true;
@@ -272,7 +320,7 @@ export default function PokerTable() {
 
           setTimeout(() => {
             flipSound
-              .play()
+              ?.play()
               .catch((err) => console.error("Error playing flip sound:", err));
           }, totalTime - dealStep);
         });
@@ -364,7 +412,9 @@ export default function PokerTable() {
       onComplete: () => {
         cleanupAnimations();
         setIsAnimating(false);
-        setIsFlippingCommunityCards(false);
+        setTimeout(() => {
+          setIsFlippingCommunityCards(false);
+        }, 3000)
         setFlipAnimationComplete(true);
         callback?.();
 
@@ -412,7 +462,7 @@ export default function PokerTable() {
         ease: "power2.inOut",
         onStart: () => {
           flipSound
-            .play()
+            ?.play()
             .catch((err) => console.error("Error playing flip sound:", err));
         },
       },
@@ -606,7 +656,7 @@ export default function PokerTable() {
             : undefined,
           onStart: () => {
             chipSound
-              .play()
+              ?.play()
               .catch((err) => console.error("Error playing chip sound:", err));
           },
           onComplete: () => {
@@ -674,7 +724,6 @@ export default function PokerTable() {
     if (item.type === "cardFlip") {
       const data = item.data as IFlipCommunityCardData;
       if (flippedCardIndicesRef.current.has(data.cardIndex)) {
-        console.warn(`Card index ${data.cardIndex} already flipped, skipping`);
         isProcessingAnimationRef.current = false;
         item.callback?.();
         processAnimationQueue();
@@ -707,7 +756,6 @@ export default function PokerTable() {
               round: data.round,
             };
           });
-          setIsFlippingCommunityCards(false);
           setFlipAnimationComplete(true);
           flippedCardIndicesRef.current.add(data.cardIndex);
           isProcessingAnimationRef.current = false;
@@ -750,6 +798,7 @@ export default function PokerTable() {
     } else if (item.type === "collectChips") {
       const { contributions, round, timestamp } = item.data;
       setIsCollectChipsComplete(false);
+      setMyTurnReady(false);
       setIsAnimating(true);
 
       setChipAnimations((prev) => prev.filter((anim) => anim.isPotToWinner));
@@ -775,13 +824,16 @@ export default function PokerTable() {
       setTimeout(() => {
         setIsAnimating(false);
         setIsCollectChipsComplete(true);
+        setTimeout(() => {
+          setMyTurnReady(true);
+        }, 1000)
         isProcessingAnimationRef.current = false;
         item.callback?.();
         processAnimationQueue();
       }, CHIP_ANIMATION_DURATION);
     } else if (item.type === "potToWinner") {
       const data = item.data as IPotToWinnerData & { timestamp: string };
-      potSound.play().catch(console.error);
+      potSound?.play().catch(console.error);
 
       setChipAnimations((prev) => prev.filter((anim) => anim.isPotToWinner));
       setMergedChips([]);
@@ -827,7 +879,7 @@ export default function PokerTable() {
         setIsAnimating(false);
         processAnimationQueue();
       }
-    }, 4000);
+    }, 2000);
     return () => clearTimeout(timeout);
   }, [isAnimating, cleanupAnimations, processAnimationQueue]);
 
@@ -1005,7 +1057,7 @@ export default function PokerTable() {
     }
   };
   const handleGameStarted = (data: ITable) => {
-    shuffleSound.play().catch(console.error);
+    shuffleSound?.play().catch(console.error);
     setTable(data);
     updateAdminPreviewCards(data);
     setShowCommunityCards(false);
@@ -1145,7 +1197,7 @@ export default function PokerTable() {
   };
 
   const handleHandResult = (data: IHandResult) => {
-    potSound.play().catch(console.error);
+    potSound?.play().catch(console.error);
     setPendingWinners(data.winners);
     setPendingShowdownPlayers(data.showdownPlayers);
     setLastActions(new Map());
@@ -1226,7 +1278,7 @@ export default function PokerTable() {
       );
       return { ...prev, players: updatedPlayers };
     });
-    chipSound.play().catch(console.error);
+    chipSound?.play().catch(console.error);
     toastMessage.success(`${amount}₮ нэмэгдлээ`);
   };
 
@@ -1335,7 +1387,7 @@ export default function PokerTable() {
   };
   const handlePotToWinner = (data: IPotToWinnerData) => {
     if (data.tableId !== tableId) return;
-    potSound.play().catch(console.error);
+    potSound?.play().catch(console.error);
   
     // Clear existing chip animations
     setChipAnimations([]);
@@ -1467,7 +1519,7 @@ export default function PokerTable() {
             zIndex: 300,
             transform: "translate(-50%, -50%)",
           }}
-          className="gap-2"
+          className="gap-2 renderPlayerChips"
         >
           {Array.from({ length: chipCount || 1 }).map((_, i) => (
             <div
@@ -1562,7 +1614,7 @@ export default function PokerTable() {
   });
 
   const { data: tableData, error: tableError } = useSWRSubscription(
-    tableId ? `table.${tableId}` : null,
+    tableId && socket && isConnected ? `table.${tableId}` : null,
     (key, { next }) => {
       if (!tableId || !socket) {
         next(new Error("Invalid table ID or socket not initialized"), null);
@@ -1578,11 +1630,6 @@ export default function PokerTable() {
       socket.on("tableData", handleTableData);
       socket.on("tableUpdate", handleTableData);
 
-      socket.on("connect", () => {
-        console.log("Socket.IO connected for SWR subscription");
-        socket.emit("joinTable", tableId);
-      });
-
       socket.on("connect_error", (err) => {
         console.error("Socket.IO connection error:", err);
         next(err, null);
@@ -1594,10 +1641,10 @@ export default function PokerTable() {
         next(new Error(msg), null);
       });
 
-      if (socket.connected) {
-        socket.emit("joinTable", tableId);
-      }
-
+      setTimeout (() => {
+          socket.emit("joinTable", { userId: currentUser?._id, tableId });
+      }, 1000);
+      
       return () => {
         socket.off("tableData", handleTableData);
         socket.off("tableUpdate", handleTableData);
@@ -1635,11 +1682,11 @@ export default function PokerTable() {
     }
   }, [table, tableData, updateAdminPreviewCards]);
 
-  useEffect(() => {
-    if (socket && isConnected && tableId) {
-      socket.emit("joinTable", tableId);
-    }
-  }, [socket, isConnected, tableId]);
+  // useEffect(() => {
+  //   if (socket && isConnected && tableId) {
+  //     socket.emit("joinTable", { tableId });
+  //   }
+  // }, [socket, isConnected, tableId]);
 
   const joinSeat = (seat: number, chips: number) => {
     if (!currentUser?._id) {
@@ -1673,30 +1720,30 @@ export default function PokerTable() {
     switch (action) {
       case "fold":
         foldSound
-          .play()
+          ?.play()
           .catch((err) => console.error("Error playing fold sound:", err));
         break;
       case "check":
         checkSound
-          .play()
+          ?.play()
           .catch((err) => console.error("Error playing check sound:", err));
         break;
       case "call":
         betAmount = table.currentBet - currentPlayer.currentBet;
         callSound
-          .play()
+          ?.play()
           .catch((err) => console.error("Error playing call sound:", err));
         break;
       case "raise":
         betAmount = amount || raiseAmount;
         raiseSound
-          .play()
+          ?.play()
           .catch((err) => console.error("Error playing raise sound:", err));
         break;
       case "allin":
         betAmount = currentPlayer.chips;
         raiseSound
-          .play()
+          ?.play()
           .catch((err) => console.error("Error playing raise sound:", err));
         break;
     }
@@ -1776,7 +1823,7 @@ export default function PokerTable() {
             className="mt-4 px-4 py-2 bg-blue-500 rounded hover:bg-blue-600"
             onClick={() => {
               if (socket && tableId) {
-                socket.emit("joinTable", tableId);
+                socket.emit("joinTable", { tableId });
               }
             }}
           >
@@ -1799,12 +1846,12 @@ export default function PokerTable() {
     ...player,
   }));
   const isUserSeated = players.some((p) => p.user === currentUser?._id);
-  const currentPlayer = table?.players[table.currentPlayer];
+  const currentPlayer = table.players[table.currentPlayer];
   const isMyTurn =
     table.status === "playing" &&
     currentPlayer?.user === currentUser?._id &&
     !currentPlayer?.hasActed &&
-    !winners.length;
+    !winners.length && !isAnimating && !isFlippingCommunityCards && isMyTurnReady;
 
   return (
     <div

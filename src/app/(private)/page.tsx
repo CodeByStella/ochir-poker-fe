@@ -104,13 +104,15 @@ export default function PokerRoomList() {
   })
 
   const { data: lobbyData, error: lobbyError, isLoading: isLobbyLoading } = useSWR<ITable[]>(
-    isConnected ? "swr.lobby.list" : null,
+    isConnected && socket?.connected ? "swr.lobby.list" : null,
     async () => {
       if (!socket || !socket.connected) {
         throw new Error("Socket not connected");
       }
       return new Promise<ITable[]>((resolve, reject) => {
-        socket.emit("getLobbyList");
+        setTimeout(() => {
+          socket.emit("getLobbyList");
+        }, 1000);
         socket.on("lobbyList", (lobbyList: ITable[]) => {
           resolve(lobbyList);
         });
@@ -118,7 +120,6 @@ export default function PokerRoomList() {
           console.error("Socket error:", msg);
           reject(new Error(msg));
         });
-        setTimeout(() => reject(new Error("Lobby list fetch timed out")), 5000);
       });
     },
     {
@@ -129,7 +130,6 @@ export default function PokerRoomList() {
       }
     }
   );
-
 
   
 
