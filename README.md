@@ -35,3 +35,10 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 # ochir-poker-fe
+![image](https://github.com/user-attachments/assets/30865fca-f258-4794-9ddd-d23a5671947a)
+![image](https://github.com/user-attachments/assets/a7a81b07-bf84-429b-a0b7-8d1c84d9190b)
+![image](https://github.com/user-attachments/assets/493b8977-d592-4359-a29a-32dc0af594c1)
+![image](https://github.com/user-attachments/assets/d52afbfb-2c4a-46f2-8809-cb0cfcb8d902)
+
+
+
