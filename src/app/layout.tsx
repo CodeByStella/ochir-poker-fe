@@ -54,12 +54,12 @@ export default function RootLayout({
           overflow: "hidden"
         }}
       >
-                <Analytics />
+        <Analytics />
         <SocketProvider>
-        <ReduxProvider>
-          <MantineProvider theme={theme}>{children}</MantineProvider>
-          <Toaster />
-        </ReduxProvider>
+          <ReduxProvider>
+            <MantineProvider theme={theme}>{children}</MantineProvider>
+            <Toaster />
+          </ReduxProvider>
         </SocketProvider>
       </body>
     </html>
